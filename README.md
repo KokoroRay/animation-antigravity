@@ -1,7 +1,7 @@
 # Antigravity Cinematic Startup Animation & Live Wallpaper 🚀✨
 
 > Hoạt cảnh khởi động điện ảnh Cyber / Anime 12 giây và giao diện **Deep Theme Customization** kèm Live Video Wallpaper dành cho **Google Antigravity IDE** trên **Windows** (và đa nền tảng).
-> Thiết kế chuẩn xác theo video thực tế trên Douyin / TikTok ([@vanthang15_09_2007](https://www.tiktok.com/@vanthang15_09_2007/video/7694511307977968948)).
+> Dự án được phát triển dựa trên mã nguồn [Codex Startup Animation](https://github.com/panding999/codex-startup-animation) của [@panding999](https://github.com/panding999), sau đó được chuyển thể và tùy chỉnh cho Google Antigravity IDE.
 
 ---
 
@@ -106,5 +106,6 @@ npm test
 
 ## 📄 Bản quyền & Tín dụng
 - Video hoạt cảnh mẫu: *Elaina Sleepy Wandering Witch* trích xuất từ nguồn anime chất lượng cao.
-- Thiết kế hoạt cảnh: Dựa trên concept Douyin / TikTok của `@vanthang15_09_2007`.
+- Mã nguồn nền tảng: [panding999/codex-startup-animation](https://github.com/panding999/codex-startup-animation).
+- Bản chuyển thể cho Google Antigravity IDE: Antigravity Community.
 - Dự án mã nguồn mở theo giấy phép MIT.

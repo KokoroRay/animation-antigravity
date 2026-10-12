@@ -4,7 +4,10 @@
   const $ = selector => document.querySelector(selector);
   const escapeHtml = str => str.replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
   
-  let TOTAL_DURATION = 12500;
+  const scene = $('#scene') || $('.scene');
+  const masterVideo = $('#master-video') || $('.master-cinematic-video');
+  const isAuthentic = Boolean(scene && scene.classList.contains('authentic-mode') && masterVideo);
+  let TOTAL_DURATION = isAuthentic ? 10000 : 12500;
   const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   const embedded = window.parent !== window && (window.ANTIGRAVITY_EXTERNAL || window.AEMEATH_EXTERNAL || new URLSearchParams(location.search).has('embedded'));
 
@@ -46,6 +49,9 @@
   const editorOpacityValue = $('#editor-opacity-value');
 
   // Ensure default media paths are populated immediately (vital for embedded iframe mode)
+  if (masterVideo && (!masterVideo.getAttribute('src') || masterVideo.getAttribute('src') === '')) {
+    masterVideo.src = assets.video;
+  }
   if (video && (!video.getAttribute('src') || video.getAttribute('src') === '')) {
     video.src = assets.video;
   }
@@ -82,7 +88,7 @@
     }
   };
 
-  // 49 Authentic Sci-Fi Script Lines Matching the Original TikTok Reference Video
+  // 49 sci-fi script lines for the adapted startup animation
   const CODE_LINES = [
     { text: "// 凝神静气 · 开启星脉", type: "comment" },
     { text: "const seed = 'ocean://memory';", type: "code", tokens: [
@@ -435,7 +441,45 @@
       else syncStatus.textContent = 'SYSTEM ONLINE // AWAKENING COMPLETE';
     }
 
-    // 3. Dynamic Camera Zoom Engine:
+    // 3. Authentic Full-Screen GPU Video Mode (Directly matching TikTok original link)
+    if (isAuthentic && masterVideo) {
+      if (playing && masterVideo.paused) {
+        masterVideo.play().catch(() => {});
+      }
+      const targetSec = t / 1000;
+      if (Math.abs(masterVideo.currentTime - targetSec) > 0.4) {
+        masterVideo.currentTime = targetSec;
+      }
+
+      // Shutter & Flash into Antigravity
+      const shutterStart = TOTAL_DURATION - 1000;
+      if (t >= shutterStart) {
+        if (shutter) {
+          shutter.style.opacity = '1';
+          shutter.style.transform = `scaleX(${clamp((t - shutterStart) / 450)})`;
+        }
+        if (flash) {
+          const fProg = clamp((t - shutterStart) / 400);
+          const fFade = Math.max(0, 1 - (t - (shutterStart + 400)) / 300);
+          flash.style.opacity = String(smooth(fProg) * fFade);
+        }
+      } else {
+        if (shutter) shutter.style.opacity = '0';
+        if (flash) flash.style.opacity = '0';
+      }
+
+      // Completion Check
+      if (t >= TOTAL_DURATION && !completed) {
+        completed = true;
+        send('complete', { videoTime: masterVideo ? masterVideo.currentTime : 0 });
+        if (!embedded) {
+          pause();
+        }
+      }
+      return;
+    }
+
+    // 4. Dynamic Camera Zoom Engine (Split Screen Mode):
     // Starts zoomed-in close on the upper head (scale 1.78, translate(-6%, -5%))
     // Smoothly zooms out between 3.5s and 8.5s down to normal framing (scale 1.0, translate(0, 0))
     if (stage) {
@@ -452,26 +496,24 @@
       }
     }
 
-    // 4. Pitch-Black Character Laser Reveal (Starts pitch black, scans top-to-bottom and clarifies)
+    // 5. Smooth Character Reveal (Organic Dissolve & Clarification, NO physical scanner cut)
     if (artwork) {
+      artwork.style.clipPath = 'none';
+      artwork.style.webkitClipPath = 'none';
       if (t < 3500) {
-        const scanY = (t / 3500) * 1080;
-        const scanPct = ((scanY / 1080) * 100).toFixed(2);
+        const fade = smooth(t / 2200);
         const brightnessVal = (0.50 + 0.50 * (t / 3500)).toFixed(2);
-        artwork.style.opacity = '1';
+        artwork.style.opacity = String(fade);
         artwork.style.filter = `contrast(1.15) brightness(${brightnessVal})`;
-        artwork.style.clipPath = `polygon(0 0, 100% 0, 100% ${scanPct}%, 0 ${scanPct}%)`;
-        artwork.style.webkitClipPath = `polygon(0 0, 100% 0, 100% ${scanPct}%, 0 ${scanPct}%)`;
       } else if (t <= 4500) {
-        artwork.style.clipPath = 'none';
-        artwork.style.webkitClipPath = 'none';
         artwork.style.filter = 'none';
         const fade = smooth((t - 3500) / 1000);
         artwork.style.opacity = String(1.0 - fade);
       } else {
-        artwork.style.clipPath = 'none';
-        artwork.style.webkitClipPath = 'none';
         artwork.style.filter = 'none';
+        artwork.style.opacity = '0';
+      }
+    }
         artwork.style.opacity = '0';
       }
     }

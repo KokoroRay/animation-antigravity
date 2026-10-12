@@ -1,7 +1,7 @@
 {
   "name": "antigravity-startup-animation",
   "version": "1.0.0",
-  "description": "Customizable startup animation and transparent wallpaper theme for Google Antigravity IDE (Windows & Cross-platform)",
+  "description": "Google Antigravity startup animation adapted from panding999/codex-startup-animation, with customizable themes and live wallpaper",
   "type": "module",
   "main": "bin/launcher.mjs",
   "scripts": {

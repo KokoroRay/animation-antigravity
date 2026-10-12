@@ -71,7 +71,7 @@ button:focus-visible, input:focus-visible { outline: 2px solid #818cf8; outline-
   will-change: opacity, transform;
 }
 
-/* Master Cinematic Video (Authentic TikTok / Codex Original Full-Screen 60fps Mode) */
+/* Master cinematic video layer for the adapted startup animation */
 .master-cinematic-video {
   position: absolute;
   inset: 0;
