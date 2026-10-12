@@ -1,0 +1,189 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Antigravity · Neural Awakening Startup Sequence</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="assets/contours.js" defer></script>
+  <script src="image-settings.js" defer></script>
+  <script src="animation.js" defer></script>
+</head>
+<body>
+  <main class="preview">
+    <!-- Top macOS / Windows Header -->
+    <header class="preview-heading">
+      <span><i></i> ANTIGRAVITY</span>
+      <span>NEURAL AWAKENING // 01</span>
+    </header>
+
+    <section class="window" aria-label="Antigravity Startup Sequence">
+      <!-- Background Scene -->
+      <div class="scene" aria-hidden="true">
+        <!-- Background Ambient Grid & Particles -->
+        <div class="ambient-grid"></div>
+        <div class="ambient-glow"></div>
+
+        <!-- Left Column: Code Streaming Terminal -->
+        <div class="terminal-container">
+          <div class="terminal-header">
+            <span class="term-status-badge">ONLINE</span>
+            <span class="term-title">CORE://AWAKENING_MATRIX.JS</span>
+          </div>
+          <div class="terminal-code" id="code-stream"></div>
+        </div>
+
+        <!-- Right Column: Character Cinematic Stage -->
+        <div class="character-viewport">
+          <div class="character-stage" id="character-stage">
+            <!-- Live Anime Video (Appears & fades in) -->
+            <video class="character-video" src="assets/startup-video.mp4" playsinline muted preload="auto" loop></video>
+
+            <!-- Fallback Artwork -->
+            <img class="character-artwork" src="assets/artwork.jpg" alt="" decoding="async">
+
+            <!-- Glowing Rainbow Neon Contour Canvas & Face Mesh -->
+            <canvas class="character-canvas" width="1920" height="1080"></canvas>
+
+
+            <!-- Top-to-Bottom Neural Scanline Laser -->
+            <div class="scanline-laser" aria-hidden="true"></div>
+
+            <!-- Orbital Elliptical Rings -->
+            <div class="orbital-system">
+              <div class="orbital-ring ring-cyan">
+                <span class="orbital-satellite"></span>
+              </div>
+              <div class="orbital-ring ring-violet">
+                <span class="orbital-satellite"></span>
+              </div>
+              <div class="orbital-ring ring-magenta"></div>
+            </div>
+
+            <!-- Vertical Falling Light Streaks (Meteors) -->
+            <div class="meteors-layer">
+              <div class="meteor streak-cyan"></div>
+              <div class="meteor streak-magenta"></div>
+              <div class="meteor streak-violet"></div>
+              <div class="meteor streak-gold"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Ambient Cyberpunk HUD Overlay -->
+        <div class="hud-overlay">
+          <div class="corner top-left"></div>
+          <div class="corner top-right"></div>
+          <div class="corner bottom-left"></div>
+          <div class="corner bottom-right"></div>
+          <div class="hud-sync">
+            <div class="sync-info">
+              <span>SYNC MATRIX</span>
+              <span id="ratio">00.00%</span>
+            </div>
+            <div class="sync-progress"><div class="sync-fill" id="sync-bar"></div></div>
+            <span class="sync-label" id="sync-status">INITIALIZING NEURAL LINK</span>
+          </div>
+          <div class="hud-time" id="timecode">00:00:00</div>
+          <!-- Full-width Cinematic Bottom Tracker -->
+          <div class="hud-bottom-tracker"><div class="hud-bottom-fill" id="bottom-progress"></div></div>
+        </div>
+
+        <!-- Flash & Shutter Closing Line -->
+        <div class="transition-flash"></div>
+        <div class="shutter-line"></div>
+      </div>
+
+      <!-- Window Traffic Dots -->
+      <div class="traffic" aria-hidden="true"><i></i><i></i><i></i></div>
+      
+      <!-- Controls on Screen -->
+      <button id="image-settings" type="button">Cài đặt giao diện</button>
+      <button class="skip" type="button" title="Bỏ qua hoạt cảnh (Esc)" aria-label="Bỏ qua hoạt cảnh">BẤM HOẶC NHẤN ESC ĐỂ BỎ QUA</button>
+
+      <!-- Settings Dialog -->
+      <dialog id="settings-dialog" aria-labelledby="settings-title">
+        <form method="dialog"><button class="settings-close" aria-label="Đóng cài đặt">×</button></form>
+        <p class="eyebrow">ANTIGRAVITY CUSTOMIZER</p>
+        <h2 id="settings-title">Tùy chỉnh Hoạt cảnh & Theme</h2>
+        <p class="settings-description">Đoạn đầu sẽ zoom gần vào nhân vật kèm nét vẽ Neon & code chạy, sau đó zoom ra hiển thị video sống động!</p>
+
+        <!-- Video Selection -->
+        <div class="video-choice-container">
+          <div class="video-preview-wrapper">
+            <video id="video-settings-preview" src="assets/startup-video.mp4" muted loop autoplay playsinline></video>
+            <label class="video-upload-label">
+              <span>Đổi video MP4/WebM khác</span>
+              <input id="video-file" type="file" accept="video/mp4,video/webm" aria-label="Chọn video mới">
+            </label>
+          </div>
+          <small class="video-tip">Video Elaina hoặc video Anime tùy thích (MP4/WebM).</small>
+        </div>
+
+        <!-- Choices for Media -->
+        <div class="image-choices">
+          <label class="image-choice">
+            <img id="artwork-preview" src="assets/artwork.jpg" alt="Background hiện tại">
+            <span>Ảnh Nét vẽ Neon</span>
+            <small>Tự động trích xuất nét vẽ đa sắc Neon</small>
+            <span class="choose-label">Đổi ảnh nét vẽ</span>
+            <input id="artwork-file" type="file" accept="image/png,image/jpeg,image/webp" aria-label="Đổi ảnh nét vẽ">
+          </label>
+        </div>
+
+        <!-- Theme Selection -->
+        <div class="theme-setting-container">
+          <label class="wallpaper-setting" for="theme-preset">
+            <span>Chủ đề màu Antigravity (Theme)</span>
+            <select id="theme-preset" class="settings-select">
+              <option value="aura" selected>Aura Dark Cyber (Tím Aura & Viền tinh tế - Mặc định)</option>
+              <option value="elaina">Elaina Starlight Cyber (Cyan & Violet)</option>
+              <option value="auto">Tự động đồng bộ theo màu chính của Video</option>
+              <option value="cyber-neon">Cyber Neon Matrix (Xanh neon & Hồng)</option>
+              <option value="deep-noir">Deep Space Noir (Đen tối giản & Bạc)</option>
+            </select>
+            <small>Đổi toàn bộ giao diện Antigravity (editor, sidebar, tab, syntax) sang phong cách anime.</small>
+          </label>
+        </div>
+
+        <!-- Editor Clarity Setting -->
+        <label class="wallpaper-setting" for="editor-opacity">
+          <span>Độ rõ nền soạn thảo code (Editor Clarity)</span>
+          <output id="editor-opacity-value">82%</output>
+          <input id="editor-opacity" type="range" min="60" max="95" step="1" value="82">
+          <small>Nền tối chuẩn mực bảo vệ mắt, đảm bảo đọc code và làm việc bình thường không bị che khuất.</small>
+        </label>
+
+        <!-- Wallpaper Options -->
+        <label class="wallpaper-setting" for="wallpaper-strength">
+          <span>Độ rõ của Live Wallpaper trong Antigravity</span>
+          <output id="wallpaper-value">40%</output>
+          <input id="wallpaper-strength" type="range" min="0" max="75" step="1" value="40">
+          <small>Video chuyển động ambient nhẹ nhàng, hiệu ứng clear mượt mà không gây nặng máy.</small>
+        </label>
+
+        <p id="settings-status" role="status">Dữ liệu lưu offline trong IndexedDB.</p>
+        
+        <div class="settings-actions">
+          <button id="reset-images" type="button">Đặt lại mặc định</button>
+          <button id="replay-startup" type="button">Phát lại hoạt cảnh</button>
+          <button id="preview-images" type="button">Lưu & Áp dụng</button>
+        </div>
+      </dialog>
+    </section>
+
+    <!-- Controls footer for standalone preview -->
+    <footer class="controls">
+      <div class="playback-buttons">
+        <button id="replay" type="button" aria-label="Phát lại hoạt cảnh">↻ <span>Phát lại</span></button>
+        <button id="pause" type="button">Tạm dừng</button>
+      </div>
+      <input id="timeline" aria-label="Thanh thời gian hoạt cảnh" type="range" min="0" max="8.5" step="0.01" value="0">
+      <output id="elapsed">00.0 <span>/ 8.5s</span></output>
+      <button class="native-launch" type="button" hidden>Mở Antigravity ↗</button>
+    </footer>
+
+    <p class="preview-note">Đoạn đầu: Zoom cận cảnh nhân vật + Nét vẽ Neon đa sắc + Code chạy → Đoạn sau: Zoom ra + Video sống động bừng sáng<span>Phím tắt: Ctrl+Alt+B</span></p>
+  </main>
+</body>
+</html>

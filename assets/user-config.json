@@ -1,0 +1,12 @@
+{
+  "strength": 40,
+  "editorOpacity": 88,
+  "themePreset": "aura",
+  "isVideo": true,
+  "palette": {
+    "base": "21 20 27",
+    "tint": "162 119 255",
+    "violet": "97 255 202",
+    "pink": "246 148 255"
+  }
+}
