@@ -23,6 +23,7 @@ const server = http.createServer((req, res) => {
     '.css': 'text/css',
     '.jpg': 'image/jpeg',
     '.png': 'image/png',
+    '.gif': 'image/gif',
     '.mp4': 'video/mp4'
   };
   const stat = fs.statSync(filePath);

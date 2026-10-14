@@ -566,25 +566,23 @@ button:focus-visible, input:focus-visible { outline: 2px solid #818cf8; outline-
   transition: opacity 0.4s ease;
 }
 
-.boot-spinner {
-  position: relative;
-  width: 40px;
-  height: 40px;
-  margin-bottom: 16px;
+.boot-character-gif {
+  width: 140px;
+  height: 140px;
+  object-fit: contain;
+  margin-bottom: 14px;
+  filter: drop-shadow(0 0 16px rgba(162, 119, 255, 0.35));
+  animation: bootCharFloat 3s ease-in-out infinite alternate;
 }
 
-.boot-ring {
-  position: absolute;
-  inset: 0;
-  border: 2px solid rgba(255, 255, 255, 0.12);
-  border-top-color: #38bdf8;
-  border-radius: 50%;
-  animation: bootCurtainSpin 0.9s linear infinite;
+@keyframes bootCharFloat {
+  0% { transform: translateY(0px); }
+  100% { transform: translateY(-4px); }
 }
 
 .boot-title {
   font-family: "JetBrains Mono", Consolas, monospace;
-  font-size: 11.5px;
+  font-size: 11px;
   font-weight: 500;
   letter-spacing: 2px;
   color: #cbd5e1;
@@ -599,22 +597,14 @@ button:focus-visible, input:focus-visible { outline: 2px solid #818cf8; outline-
   margin-top: 5px;
 }
 
-@keyframes bootCurtainSpin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-}
-
 /* ========================================================
    TRANSITION FLASH & PHOTON COLLAPSE (NO CENTER LINE)
    ======================================================== */
 .transition-flash {
-  position: absolute;
-  inset: 0;
-  background: radial-gradient(circle at 67% 40%, rgba(241, 245, 249, 0.95) 0%, rgba(192, 132, 252, 0.65) 45%, rgba(21, 20, 27, 0.95) 100%);
-  opacity: 0;
-  pointer-events: none;
-  z-index: 15;
-  will-change: opacity;
+  display: none !important;
+  opacity: 0 !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
 }
 
 .shutter-line {

@@ -3,7 +3,7 @@ import { join } from 'node:path';
 import { installRenderer } from './renderer.mjs';
 
 export async function buildInjection(root, options = {}) {
-  const [html, css, skin, settings, contours, animation, avatar, artwork] = await Promise.all([
+  const [html, css, skin, settings, contours, animation, avatar, artwork, charGif] = await Promise.all([
     'index.html',
     'style.css',
     'extension/wallpaper.css',
@@ -11,7 +11,8 @@ export async function buildInjection(root, options = {}) {
     'assets/contours.js',
     'animation.js',
     'assets/avatar.jpg',
-    'assets/artwork.jpg'
+    'assets/artwork.jpg',
+    'assets/elaina-transparent.gif'
   ].map(name => readFile(join(root, name))));
 
   const mediaUrl = options.mediaUrl || '';
@@ -30,6 +31,7 @@ export async function buildInjection(root, options = {}) {
     assets: {
       avatar: 'data:image/jpeg;base64,' + avatar.toString('base64'),
       artwork: 'data:image/jpeg;base64,' + artwork.toString('base64'),
+      characterGif: 'data:image/gif;base64,' + charGif.toString('base64'),
       video: mediaUrl ? `${mediaUrl}/elaina-video.mp4` : '',
       wallpaperVideo: mediaUrl ? `${mediaUrl}/elaina-video.mp4` : ''
     },

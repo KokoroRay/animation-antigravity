@@ -52,7 +52,11 @@ export function getMediaServer(root) {
               ? 'image/jpeg'
               : filePath.endsWith('.png')
                 ? 'image/png'
-                : 'application/octet-stream';
+                : filePath.endsWith('.gif')
+                  ? 'image/gif'
+                  : filePath.endsWith('.webp')
+                    ? 'image/webp'
+                    : 'application/octet-stream';
 
         const range = req.headers.range;
 

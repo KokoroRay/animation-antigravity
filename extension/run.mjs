@@ -34,7 +34,8 @@ function log(...args) {
 // Scripts
 // ---------------------------------------------------------------------------
 // Pure pitch-black curtain used while waiting for the page to settle (#000000)
-const CURTAIN_SCRIPT = `(() => {
+function getCurtainScript() {
+  return `(() => {
   if (window.top !== window) return;
 
   const hideSplashStyle = () => {
@@ -56,7 +57,8 @@ const CURTAIN_SCRIPT = `(() => {
     const c = document.createElement('div');
     c.id = 'antigravity-pre-curtain';
     c.style.cssText = 'position:fixed;inset:0;width:100vw;height:100vh;background:#000000;z-index:2147483640;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none;color:#f1f5f9;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"JetBrains Mono",monospace;user-select:none;';
-    c.innerHTML = '<div style="position:relative;width:40px;height:40px;margin-bottom:16px;"><div style="position:absolute;inset:0;border:2px solid rgba(255,255,255,0.12);border-top-color:#38bdf8;border-radius:50%;animation:antigravityCurtainSpin 0.9s linear infinite;"></div></div><div style="font-family:\\'JetBrains Mono\\',Consolas,monospace;font-size:11.5px;font-weight:500;letter-spacing:2px;color:#cbd5e1;text-transform:uppercase;">INITIALIZING NEURAL AWAKENING...</div><div style="font-family:\\'JetBrains Mono\\',Consolas,monospace;font-size:9px;letter-spacing:1.5px;color:#64748b;margin-top:5px;">SYNCHRONIZING QUANTUM MATRIX · 60 FPS</div><style>@keyframes antigravityCurtainSpin{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}</style>';
+    // Keep only a plain black handoff cover here. The Elaina GIF is used by
+    // Antigravity's native loading view; adding it again here made both loaders overlap.
     host.appendChild(c);
     return true;
   };
@@ -71,6 +73,9 @@ const CURTAIN_SCRIPT = `(() => {
     document.addEventListener('readystatechange', mountCurtain);
   }
 })();`;
+}
+
+let CURTAIN_SCRIPT = getCurtainScript();
 
 const REMOVE_CURTAIN = `(() => { document.getElementById('antigravity-pre-curtain')?.remove(); document.getElementById('antigravity-instant-curtain')?.remove(); })()`;
 
@@ -155,6 +160,7 @@ async function evaluate(client, expression, timeout = 2500) {
 // ---------------------------------------------------------------------------
 export async function watchAndInject(port, isInitialLaunch = true) {
   const mediaServer = await getMediaServer(root);
+  CURTAIN_SCRIPT = getCurtainScript();
   const [sourceIntro, sourceWallpaper] = await Promise.all([
     buildInjection(root, { mediaUrl: mediaServer.url, skipIntro: false }),
     buildInjection(root, { mediaUrl: mediaServer.url, skipIntro: true })

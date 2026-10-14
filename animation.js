@@ -14,6 +14,7 @@
   const defaultAssets = {
     artwork: 'assets/artwork.jpg',
     avatar: 'assets/avatar.jpg',
+    characterGif: 'assets/elaina-transparent.gif',
     video: 'assets/elaina-video.mp4'
   };
   const assets = window.ANTIGRAVITY_ASSETS || window.AEMEATH_ASSETS || defaultAssets;
@@ -38,6 +39,10 @@
   const flash = $('.transition-flash');
   const shutter = $('.shutter-line');
   const bootCurtain = $('#boot-curtain') || $('.boot-curtain');
+  const bootGif = $('#boot-gif') || $('.boot-character-gif');
+  if (bootGif && (!bootGif.getAttribute('src') || bootGif.getAttribute('src') === '')) {
+    bootGif.src = assets.characterGif || 'assets/elaina-transparent.gif';
+  }
   const slider = $('#timeline');
   const pauseBtn = $('#pause');
   const replayBtn = $('#replay');
@@ -341,11 +346,14 @@
       contourGradient.addColorStop(1.00, '#22d3ee'); // Bright electric teal
     }
 
-    const drawRatio = clamp(t / 3200);
+    const contourStart = 1200;
+    const contourEnd = 4400;
+    const rawRatio = t < contourStart ? 0 : clamp((t - contourStart) / (contourEnd - contourStart));
+    const drawRatio = smooth(rawRatio);
     const targetLen = drawRatio * totalContourLength;
 
-    // Smooth soft fadeout as video blooms into full focus (3.2s - 3.6s)
-    const contourFade = t < 3200 ? 1.0 : Math.max(0, 1.0 - (t - 3200) / 400);
+    // Smooth soft fadeout as video blooms into full focus (4.4s - 4.8s)
+    const contourFade = t < contourEnd ? 1.0 : Math.max(0, 1.0 - (t - contourEnd) / 400);
 
     // Dynamic Shimmer Pulse
     const edgePulse = 0.94 + 0.06 * Math.sin(t * 0.007);
@@ -407,13 +415,13 @@
   let lastCharCount = -1;
 
   function render(t) {
-    // 0. Boot Initializing Screen (0.0s – 1.4s)
+    // 0. Boot Initializing Screen (0.0s – 1.3s)
     if (bootCurtain) {
-      if (t < 1100) {
+      if (t < 1000) {
         bootCurtain.style.opacity = '1';
         bootCurtain.style.display = 'flex';
-      } else if (t < 1600) {
-        const fade = smooth((1600 - t) / 500);
+      } else if (t < 1350) {
+        const fade = smooth((1350 - t) / 350);
         bootCurtain.style.opacity = String(fade);
         bootCurtain.style.display = 'flex';
       } else {
@@ -437,10 +445,10 @@
 
     // 2. Status Text
     if (syncStatus) {
-      if (t < 1800) syncStatus.textContent = 'INITIALIZING NEURAL LINK';
-      else if (t < 3200) syncStatus.textContent = 'PHOTON MATRIX CALIBRATION';
-      else if (t < 6000) syncStatus.textContent = 'OCULAR APERTURE AWAKENING';
-      else if (t < 8500) syncStatus.textContent = 'SYNCHRONIZING CONSCIOUSNESS';
+      if (t < 1400) syncStatus.textContent = 'INITIALIZING NEURAL LINK';
+      else if (t < 4400) syncStatus.textContent = 'PHOTON MATRIX CALIBRATION';
+      else if (t < 7200) syncStatus.textContent = 'OCULAR APERTURE AWAKENING';
+      else if (t < 8800) syncStatus.textContent = 'SYNCHRONIZING CONSCIOUSNESS';
       else syncStatus.textContent = 'SYSTEM ONLINE // AWAKENING COMPLETE';
     }
 
@@ -455,24 +463,14 @@
         masterVideo.currentTime = targetSec;
       }
 
-      // Soft Photonic Aperture Flash into Antigravity (NO CENTER LINE)
-      const shutterStart = TOTAL_DURATION - 800;
-      if (t >= shutterStart) {
-        if (shutter) {
-          shutter.style.opacity = '0';
-          shutter.style.display = 'none';
-        }
-        if (flash) {
-          const fProg = clamp((t - shutterStart) / 400);
-          const fFade = Math.max(0, 1 - (t - (shutterStart + 400)) / 300);
-          flash.style.opacity = String(smooth(fProg) * fFade);
-        }
-      } else {
-        if (shutter) {
-          shutter.style.opacity = '0';
-          shutter.style.display = 'none';
-        }
-        if (flash) flash.style.opacity = '0';
+      // Clean Transition into Antigravity (NO PINK FLASH, NO CENTER LINE)
+      if (shutter) {
+        shutter.style.opacity = '0';
+        shutter.style.display = 'none';
+      }
+      if (flash) {
+        flash.style.opacity = '0';
+        flash.style.display = 'none';
       }
 
       // Completion Check
@@ -488,12 +486,12 @@
 
     // 4. Dynamic Camera Zoom Engine:
     // Starts zoomed-in close on Elaina's sleeping face (scale 1.78, translate(-6%, -5%))
-    // Smoothly zooms out between 3.2s and 6.0s down to normal framing (scale 1.0, translate(0, 0))
+    // Smoothly zooms out between 4.4s and 7.2s down to normal framing (scale 1.0, translate(0, 0))
     if (stage) {
-      if (t <= 3200) {
+      if (t <= 4400) {
         stage.style.transform = 'scale(1.78) translate(-6%, -5%)';
-      } else if (t <= 6000) {
-        const alpha = smooth((t - 3200) / 2800);
+      } else if (t <= 7200) {
+        const alpha = smooth((t - 4400) / 2800);
         const scale = 1.78 - 0.78 * alpha;
         const tx = -6 * (1 - alpha);
         const ty = -5 * (1 - alpha);
@@ -504,47 +502,38 @@
     }
 
     // 5. Progressive Character Reveal from Darkness:
-    // Closed-eye still frame starts in deep shadow (#000000), leaving the room pitch black
-    // while neon Wonderland Edge contours draw in darkness, then softly illuminating Elaina.
+    // Scene starts in deep pitch-black (#000000).
+    // Neon Wonderland Edge contours trace in the dark void from 1.2s to 4.4s.
+    // Between 1.8s and 4.4s, Elaina's sleeping form gently and softly awakens from darkness:
+    // brightness rises smoothly from 0.0 to 1.0, and opacity rises from 0.0 to 1.0,
+    // softly illuminating her as the neon filaments sweep over her hair and body!
     if (artwork) {
-      if (t < 1400) {
+      if (t < 1800) {
         artwork.style.opacity = '0';
-        artwork.style.filter = 'contrast(1.4) brightness(0.05)';
+        artwork.style.filter = 'contrast(1.4) brightness(0.0)';
         artwork.style.maskImage = 'none';
         artwork.style.webkitMaskImage = 'none';
         artwork.style.clipPath = 'none';
         artwork.style.webkitClipPath = 'none';
-      } else if (t < 2400) {
-        // 1.4s - 2.4s: Pitch-black void. Background room is completely dark.
-        // Faint dark silhouette (opacity <= 0.15, brightness 0.22) emerges gently under neon contours.
-        const p1 = (t - 1400) / 1000;
-        const faintAlpha = 0.15 * smooth(p1);
-        artwork.style.opacity = String(faintAlpha);
-        artwork.style.filter = 'contrast(1.3) brightness(0.22)';
-        artwork.style.maskImage = 'none';
-        artwork.style.webkitMaskImage = 'none';
-        artwork.style.clipPath = 'none';
-        artwork.style.webkitClipPath = 'none';
-      } else if (t < 3200) {
-        // 2.4s - 3.2s: Light smoothly blooms over Elaina as contours reach the hands and book.
-        const p2 = (t - 2400) / 800;
-        const bloomFade = smooth(p2);
-        const alpha = 0.15 + 0.85 * bloomFade;
-        const bright = (0.22 + 0.78 * bloomFade).toFixed(2);
+      } else if (t < 4400) {
+        const p = smooth((t - 1800) / 2600);
+        const alpha = p;
+        const bright = (0.05 + 0.95 * p).toFixed(2);
+        const contrast = (1.35 - 0.25 * p).toFixed(2);
         artwork.style.opacity = String(alpha);
-        artwork.style.filter = `contrast(1.1) brightness(${bright})`;
+        artwork.style.filter = `contrast(${contrast}) brightness(${bright})`;
         artwork.style.maskImage = 'none';
         artwork.style.webkitMaskImage = 'none';
         artwork.style.clipPath = 'none';
         artwork.style.webkitClipPath = 'none';
-      } else if (t <= 3600) {
+      } else if (t <= 4800) {
         artwork.style.maskImage = 'none';
         artwork.style.webkitMaskImage = 'none';
         artwork.style.clipPath = 'none';
         artwork.style.webkitClipPath = 'none';
         artwork.style.filter = 'none';
-        // Seamless 400ms crossfade into live video
-        const fade = smooth((t - 3200) / 400);
+        // Seamless 400ms crossfade into live video (4.4s - 4.8s)
+        const fade = smooth((t - 4400) / 400);
         artwork.style.opacity = String(1.0 - fade);
       } else {
         artwork.style.maskImage = 'none';
@@ -561,31 +550,36 @@
       if (orbitalSystem) orbitalSystem.style.opacity = '0';
       if (meteorsLayer) meteorsLayer.style.opacity = '0';
       if (ambientGlow) ambientGlow.style.opacity = '0';
-    } else if (t < 2000) {
-      const initFade = smooth((t - 1200) / 800);
+    } else if (t < 2400) {
+      const initFade = smooth((t - 1200) / 1200);
       if (orbitalSystem) orbitalSystem.style.opacity = String(0.75 * initFade);
       if (meteorsLayer) meteorsLayer.style.opacity = String(0.85 * initFade);
       if (ambientGlow) ambientGlow.style.opacity = String(0.20 * initFade);
-    } else if (t < 3200) {
+    } else if (t < 4400) {
       if (orbitalSystem) orbitalSystem.style.opacity = '0.75';
       if (meteorsLayer) meteorsLayer.style.opacity = '0.85';
       if (ambientGlow) ambientGlow.style.opacity = '0.20';
     } else {
-      const bloom = smooth((t - 3200) / 1200);
+      const bloom = smooth((t - 4400) / 1400);
       if (orbitalSystem) orbitalSystem.style.opacity = String(0.75 + 0.25 * bloom);
       if (meteorsLayer) meteorsLayer.style.opacity = String(0.85 + 0.15 * bloom);
       if (ambientGlow) ambientGlow.style.opacity = String(0.20 + 0.25 * bloom);
     }
 
-    // Auto-hide character contours cleanly as video takes over (completely gone at t >= 3600)
-    if (t < 3200) {
+    // Auto-hide character contours cleanly as video takes over (completely gone at t >= 4800)
+    if (t < 1200) {
+      if (canvas && canvas.style.display !== 'none') {
+        canvas.style.opacity = '0';
+        if (ctx) ctx.clearRect(0, 0, 1920, 1080);
+      }
+    } else if (t < 4400) {
       if (canvas) {
         if (canvas.style.display === 'none') canvas.style.display = 'block';
         canvas.style.opacity = '1';
       }
       drawNeonContours(t);
-    } else if (t < 3600) {
-      const contourFade = smooth((3600 - t) / 400);
+    } else if (t < 4800) {
+      const contourFade = smooth((4800 - t) / 400);
       if (canvas) {
         if (canvas.style.display === 'none') canvas.style.display = 'block';
         canvas.style.opacity = String(contourFade);
@@ -605,16 +599,16 @@
 
     // 6. Live Video Playback (assets/elaina-video.mp4):
     // Elaina starts with eyes closed at 0.0s matching artwork.jpg.
-    // Video starts playing cleanly at t = 3200 right as camera zooms out.
-    // Elaina naturally awakens and opens her eyes between 3.2s and 6.0s (video 0s -> 2.8s).
+    // Video starts playing cleanly at t = 4400 right as camera begins zooming out.
+    // Elaina naturally awakens and opens her eyes between 4.4s + 1.6s = 6.0s and 7.0s.
     if (video) {
-      if (t < 3200) {
+      if (t < 4400) {
         video.style.opacity = '0';
         if (!video.paused) {
           video.pause();
         }
       } else {
-        const videoFade = smooth((t - 3200) / 400);
+        const videoFade = smooth((t - 4400) / 400);
         video.style.opacity = String(videoFade);
 
         if (playing && video.paused) {
@@ -689,24 +683,14 @@
       }
     }
 
-    // 8. Climax Soft Photonic Flash into Antigravity (NO CENTER LINE)
-    const shutterStart = TOTAL_DURATION - 800;
-    if (t >= shutterStart) {
-      if (shutter) {
-        shutter.style.opacity = '0';
-        shutter.style.display = 'none';
-      }
-      if (flash) {
-        const fProg = clamp((t - shutterStart) / 420);
-        const fFade = Math.max(0, 1 - (t - (shutterStart + 420)) / 380);
-        flash.style.opacity = String(smooth(fProg) * fFade);
-      }
-    } else {
-      if (shutter) {
-        shutter.style.opacity = '0';
-        shutter.style.display = 'none';
-      }
-      if (flash) flash.style.opacity = '0';
+    // 8. Clean Direct Transition into Antigravity (NO PINK FLASH, NO CENTER LINE)
+    if (shutter) {
+      shutter.style.opacity = '0';
+      shutter.style.display = 'none';
+    }
+    if (flash) {
+      flash.style.opacity = '0';
+      flash.style.display = 'none';
     }
 
     // 9. Completion Check
@@ -1022,7 +1006,7 @@
         }, { once: true });
       }
       if (video) {
-        const vidTime = targetS < 3.2 ? 0 : (targetS - 3.2);
+        const vidTime = targetS < 4.4 ? 0 : (targetS - 4.4);
         if (video.duration && isFinite(video.duration)) {
           video.currentTime = Math.min(video.duration, vidTime);
         } else {
@@ -1038,8 +1022,8 @@
         completed = false;
         lastLineIndex = -1;
         seek(startAt);
-        if (video && startAt >= 3500) {
-          const vidTime = (startAt - 3500) / 1000;
+        if (video && startAt >= 4400) {
+          const vidTime = (startAt - 4400) / 1000;
           const applyTime = () => { try { video.currentTime = Math.min(video.duration || vidTime, vidTime); } catch (_) {} };
           if (video.readyState >= 1) applyTime();
           else video.addEventListener('loadedmetadata', applyTime, { once: true });
