@@ -314,6 +314,7 @@
 
   // Draw Neon Contours with Progressive Scanline Reveal (Samsung Wonderland Edge Style)
   const ctx = canvas?.getContext('2d');
+  let lastContourDrawAt = -Infinity;
 
 
 
@@ -324,6 +325,11 @@
     if (t >= 3600) {
       return;
     }
+
+    // The outline is decorative; redraw it at 30 Hz while the video keeps its
+    // own playback cadence. This avoids spending a full canvas draw every RAF.
+    if (t - lastContourDrawAt < 1000 / 30) return;
+    lastContourDrawAt = t;
 
     if (canvas && canvas.style.display === 'none') {
       canvas.style.display = 'block';
@@ -359,17 +365,19 @@
     const edgePulse = 0.94 + 0.06 * Math.sin(t * 0.007);
     const alpha1 = edgePulse * contourFade;
 
-    // Pass 1: Delicate Chromatic Neon Filament (Thinner main lines ~0.95px, fine details ~0.50px)
+    // A single fine gradient stroke keeps the contour smooth without the harsh
+    // doubled white core that made edges look jagged and over-bright.
     ctx.save();
     ctx.strokeStyle = contourGradient;
-    ctx.globalAlpha = alpha1;
+    ctx.globalAlpha = alpha1 * 0.78;
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
+    ctx.miterLimit = 2;
 
     let accum1 = 0;
     for (const p of preparedPaths) {
       if (accum1 >= targetLen) break;
-      ctx.lineWidth = p.isMain ? 0.95 : 0.50;
+      ctx.lineWidth = p.isMain ? 0.72 : 0.42;
       const avail = targetLen - accum1;
       if (avail >= p.total) {
         ctx.setLineDash([]);
@@ -384,30 +392,6 @@
     }
     ctx.restore();
 
-    // Pass 2: Ultra-crisp Laser White Filament Core (Main ~0.40px, details ~0.22px)
-    ctx.save();
-    ctx.strokeStyle = '#ffffff';
-    ctx.globalAlpha = 0.95 * alpha1;
-    ctx.lineCap = 'round';
-    ctx.lineJoin = 'round';
-
-    let accum2 = 0;
-    for (const p of preparedPaths) {
-      if (accum2 >= targetLen) break;
-      ctx.lineWidth = p.isMain ? 0.40 : 0.22;
-      const avail = targetLen - accum2;
-      if (avail >= p.total) {
-        ctx.setLineDash([]);
-        ctx.stroke(p.path2d);
-        accum2 += p.total;
-      } else {
-        ctx.setLineDash([avail, p.total]);
-        ctx.stroke(p.path2d);
-        accum2 += avail;
-        break;
-      }
-    }
-    ctx.restore();
   }
 
   // Master Timeline Render Loop
@@ -440,8 +424,8 @@
     const progressRatio = clamp(t / (TOTAL_DURATION - 800));
     const pct = (progressRatio * 100).toFixed(2);
     if (ratioText) ratioText.textContent = `${pct}%`;
-    if (syncBar) syncBar.style.width = `${pct}%`;
-    if (bottomProgress) bottomProgress.style.width = `${pct}%`;
+    if (syncBar) syncBar.style.transform = `scaleX(${progressRatio})`;
+    if (bottomProgress) bottomProgress.style.transform = `scaleX(${progressRatio})`;
 
     // 2. Status Text
     if (syncStatus) {
@@ -677,7 +661,7 @@
       // Dim left code stream smoothly as character awakes to draw full focus
       if (t >= 6000) {
         const dimFade = smooth((t - 6000) / 1500);
-        codeStream.style.opacity = String(1.0 - 0.55 * dimFade);
+        codeStream.style.opacity = String(1.0 - 0.15 * dimFade);
       } else {
         codeStream.style.opacity = '1';
       }

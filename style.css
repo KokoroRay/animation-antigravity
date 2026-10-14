@@ -136,6 +136,7 @@ button:focus-visible, input:focus-visible { outline: 2px solid #818cf8; outline-
   max-width: 800px;
   height: calc(100% - 36px);
   z-index: 10;
+  background: transparent;
   display: flex;
   flex-direction: column;
   pointer-events: none;
@@ -151,9 +152,9 @@ button:focus-visible, input:focus-visible { outline: 2px solid #818cf8; outline-
 .term-status-badge {
   font: 700 8.5px "JetBrains Mono", Consolas, monospace;
   letter-spacing: 1.5px;
-  color: #38bdf8;
-  background: rgba(56, 189, 248, 0.12);
-  border: 1px solid rgba(56, 189, 248, 0.35);
+  color: #7dd3fc;
+  background: rgba(8, 18, 35, 0.42);
+  border: 1px solid rgba(56, 189, 248, 0.5);
   border-radius: 4px;
   padding: 2px 6px;
   box-shadow: 0 0 8px rgba(56, 189, 248, 0.25);
@@ -161,7 +162,7 @@ button:focus-visible, input:focus-visible { outline: 2px solid #818cf8; outline-
 
 .term-title {
   font: 10px "JetBrains Mono", Consolas, monospace;
-  color: #64748b;
+  color: #a5b4c8;
   letter-spacing: 1.8px;
 }
 
@@ -170,14 +171,14 @@ button:focus-visible, input:focus-visible { outline: 2px solid #818cf8; outline-
   height: 100%;
   overflow-y: hidden;
   font: clamp(10px, 1.1vw, 12.8px) / 1.7 "JetBrains Mono", Consolas, Menlo, monospace;
-  color: #cbd5e1;
-  text-shadow: 0 0 8px rgba(148, 163, 184, 0.25);
+  color: #f1f5f9;
+  text-shadow: 0 1px 2px #000, 0 0 5px rgba(0, 0, 0, 0.95);
   display: flex;
   flex-direction: column;
   justify-content: flex-start;
   mask-image: linear-gradient(to bottom, transparent 0%, black 3%, black 97%, transparent 100%);
   -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 3%, black 97%, transparent 100%);
-  scroll-behavior: smooth;
+  scroll-behavior: auto;
 }
 
 .code-line {
@@ -186,10 +187,10 @@ button:focus-visible, input:focus-visible { outline: 2px solid #818cf8; outline-
 }
 
 /* Syntax Token Colors (Matching Video Demo) */
-.tok-comment { color: #64748b; font-style: italic; }
-.tok-keyword { color: #f472b6; font-weight: 600; text-shadow: 0 0 8px rgba(244, 114, 182, 0.4); }
-.tok-string  { color: #facc15; text-shadow: 0 0 8px rgba(250, 204, 21, 0.3); }
-.tok-fn      { color: #38bdf8; text-shadow: 0 0 8px rgba(56, 189, 248, 0.4); }
+.tok-comment { color: #a8b6ca; font-style: italic; }
+.tok-keyword { color: #ff8ec4; font-weight: 600; text-shadow: 0 0 6px rgba(244, 114, 182, 0.55); }
+.tok-string  { color: #ffe477; text-shadow: 0 0 5px rgba(250, 204, 21, 0.42); }
+.tok-fn      { color: #71dcff; text-shadow: 0 0 6px rgba(56, 189, 248, 0.55); }
 .tok-number  { color: #c084fc; }
 .tok-prop    { color: #a5b4fc; }
 .tok-op      { color: #94a3b8; }
@@ -217,22 +218,14 @@ button:focus-visible, input:focus-visible { outline: 2px solid #818cf8; outline-
   right: 0;
   top: 0;
   bottom: 0;
-  left: 32%;
+  left: 0;
   overflow: hidden;
   z-index: 2;
   background: #000000;
 }
 
 .character-viewport::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  left: 0;
-  width: 14%;
-  background: linear-gradient(to right, #000000 0%, transparent 100%);
-  pointer-events: none;
-  z-index: 5;
+  display: none;
 }
 
 .character-stage {
@@ -240,7 +233,7 @@ button:focus-visible, input:focus-visible { outline: 2px solid #818cf8; outline-
   inset: 0;
   width: 100%;
   height: 100%;
-  background: #000000;
+  background: transparent;
   transform-origin: 67% 34%;
   will-change: transform;
 }
@@ -252,14 +245,15 @@ button:focus-visible, input:focus-visible { outline: 2px solid #818cf8; outline-
   width: 100%;
   height: 100%;
   object-fit: cover;
-  object-position: 67% 36%;
+  object-position: 72% 36%;
   opacity: 0;
   z-index: 2;
   pointer-events: none;
-  filter: none;
+  filter: contrast(1.08) saturate(1.08);
   will-change: opacity, transform;
-  transform: translateZ(0);
-  -webkit-transform: translateZ(0);
+  transform: translate3d(7%, 0, 0) scale(1.14);
+  transform-origin: 68% 36%;
+  -webkit-transform: translate3d(7%, 0, 0) scale(1.14);
 }
 
 /* Fallback / Silhouette Artwork Base */
@@ -269,11 +263,13 @@ button:focus-visible, input:focus-visible { outline: 2px solid #818cf8; outline-
   width: 100%;
   height: 100%;
   object-fit: cover;
-  object-position: 67% 36%;
+  object-position: 72% 36%;
   opacity: 0;
   z-index: 1;
   pointer-events: none;
-  will-change: opacity, clip-path;
+  will-change: opacity, clip-path, transform;
+  transform: translate3d(7%, 0, 0) scale(1.14);
+  transform-origin: 68% 36%;
 }
 
 /* Neon Contour Canvas (Razor-thin Laser Filament) */
@@ -283,10 +279,12 @@ button:focus-visible, input:focus-visible { outline: 2px solid #818cf8; outline-
   width: 100%;
   height: 100%;
   object-fit: cover;
-  object-position: 67% 36%;
+  object-position: 72% 36%;
   z-index: 3;
   pointer-events: none;
-  will-change: opacity;
+  will-change: opacity, transform;
+  transform: translate3d(7%, 0, 0) scale(1.14);
+  transform-origin: 68% 36%;
 }
 
 /* ========================================================
@@ -505,7 +503,9 @@ button:focus-visible, input:focus-visible { outline: 2px solid #818cf8; outline-
 
 .sync-fill {
   height: 100%;
-  width: 0%;
+  width: 100%;
+  transform: scaleX(0);
+  transform-origin: left center;
   background: linear-gradient(90deg, #38bdf8, #818cf8, #c084fc);
   box-shadow: 0 0 10px #38bdf8, 0 0 20px rgba(192, 132, 252, 0.5);
 }
@@ -533,7 +533,9 @@ button:focus-visible, input:focus-visible { outline: 2px solid #818cf8; outline-
 
 .hud-bottom-fill {
   height: 100%;
-  width: 0%;
+  width: 100%;
+  transform: scaleX(0);
+  transform-origin: left center;
   background: linear-gradient(90deg, #38bdf8, #818cf8, #f472b6);
   box-shadow: 0 0 10px #38bdf8, 0 0 20px rgba(244, 114, 182, 0.8);
 }
