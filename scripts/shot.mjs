@@ -57,7 +57,7 @@ server.listen(0, '127.0.0.1', () => {
   const url = `http://127.0.0.1:${port}/index.html?seek=${seekTime}`;
   const outPath = path.join(process.cwd(), outFile);
 
-  const cmd = `"${edge}" --headless --disable-gpu --virtual-time-budget=3000 --window-size=1280,720 --screenshot="${outPath}" "${url}"`;
+  const cmd = `"${edge}" --headless --autoplay-policy=no-user-gesture-required --virtual-time-budget=4000 --window-size=1280,720 --screenshot="${outPath}" "${url}"`;
   exec(cmd, (err, stdout, stderr) => {
     if (err) console.error('Exec error:', err.message);
     else console.log(`Screenshot saved successfully to ${outFile}`);

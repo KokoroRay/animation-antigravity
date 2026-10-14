@@ -1,10 +1,9 @@
 import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
-import { pathToFileURL } from 'node:url';
 import { installRenderer } from './renderer.mjs';
 
-export async function buildInjection(root) {
-  const [html, css, skin, settings, contours, animation, avatar, artwork, videoBuf] = await Promise.all([
+export async function buildInjection(root, options = {}) {
+  const [html, css, skin, settings, contours, animation, avatar, artwork] = await Promise.all([
     'index.html',
     'style.css',
     'extension/wallpaper.css',
@@ -12,11 +11,13 @@ export async function buildInjection(root) {
     'assets/contours.js',
     'animation.js',
     'assets/avatar.jpg',
-    'assets/artwork.jpg',
-    'assets/startup-video.mp4'
+    'assets/artwork.jpg'
   ].map(name => readFile(join(root, name))));
 
+  const mediaUrl = options.mediaUrl || '';
+
   const payload = {
+    skipIntro: Boolean(options.skipIntro),
     html: html.toString()
       .replace(/<!doctype[^>]*>/ig, '')
       .replace(/<html[^>]*>|<\/html>/ig, '')
@@ -29,7 +30,8 @@ export async function buildInjection(root) {
     assets: {
       avatar: 'data:image/jpeg;base64,' + avatar.toString('base64'),
       artwork: 'data:image/jpeg;base64,' + artwork.toString('base64'),
-      videoBase64: videoBuf.toString('base64')
+      video: mediaUrl ? `${mediaUrl}/elaina-video.mp4` : '',
+      wallpaperVideo: mediaUrl ? `${mediaUrl}/elaina-video.mp4` : ''
     },
     diskConfig: await readFile(join(root, 'assets/user-config.json'), 'utf8')
       .then(t => JSON.parse(t))

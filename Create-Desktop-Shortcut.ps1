@@ -2,9 +2,9 @@
 $ErrorActionPreference = 'Stop'
 
 $scriptDir = $PSScriptRoot
-$targetBat = Join-Path $scriptDir "Start-Antigravity.bat"
+$targetVbs = Join-Path $scriptDir "Start-Antigravity.vbs"
 $desktopPath = [System.Environment]::GetFolderPath('Desktop')
-$shortcutPath = Join-Path $desktopPath "Antigravity (Custom Startup).lnk"
+$shortcutPath = Join-Path $desktopPath "Antigravity.lnk"
 
 $antigravityExe = "C:\Users\Admin\AppData\Local\Programs\Antigravity\Antigravity.exe"
 if (-not (Test-Path $antigravityExe)) {
@@ -12,20 +12,36 @@ if (-not (Test-Path $antigravityExe)) {
 }
 
 $WshShell = New-Object -ComObject WScript.Shell
-$Shortcut = $WshShell.CreateShortcut($shortcutPath)
-$Shortcut.TargetPath = $targetBat
-$Shortcut.WorkingDirectory = $scriptDir
-$Shortcut.Description = "Khởi chạy Google Antigravity với hoạt cảnh mở đầu và hình nền tùy chỉnh"
+$shortcuts = @(
+    (Join-Path $desktopPath "Antigravity.lnk"),
+    (Join-Path ([System.Environment]::GetFolderPath('UserProfile')) "OneDrive\Desktop\Antigravity.lnk"),
+    (Join-Path $env:APPDATA "Microsoft\Windows\Start Menu\Programs\Antigravity.lnk"),
+    (Join-Path $env:APPDATA "Microsoft\Windows\Start Menu\Programs\Antigravity\Antigravity.lnk"),
+    (Join-Path $env:APPDATA "Microsoft\Windows\Start Menu\Programs\Antigravity\Antigravity IDE.lnk")
+)
 
-if (Test-Path $antigravityExe) {
-    $Shortcut.IconLocation = "$antigravityExe,0"
+foreach ($scPath in $shortcuts) {
+    $parent = Split-Path -Parent $scPath
+    if (Test-Path $parent) {
+        if (Test-Path $scPath) {
+            Set-ItemProperty -Path $scPath -Name Attributes -Value Normal -ErrorAction SilentlyContinue
+        }
+        $Shortcut = $WshShell.CreateShortcut($scPath)
+        $Shortcut.TargetPath = "wscript.exe"
+        $Shortcut.Arguments = "`"$targetVbs`""
+        $Shortcut.WorkingDirectory = $scriptDir
+        $Shortcut.Description = "Khoi chay Google Antigravity voi hieu ung mo dau Anime va theme tu dong"
+        if (Test-Path $antigravityExe) {
+            $Shortcut.IconLocation = "$antigravityExe,0"
+        }
+        $Shortcut.Save()
+        Set-ItemProperty -Path $scPath -Name Attributes -Value ([System.IO.FileAttributes]::ReadOnly) -ErrorAction SilentlyContinue
+        Write-Host " [OK] $scPath" -ForegroundColor Green
+    }
 }
 
-$Shortcut.Save()
-
 Write-Host "==========================================================" -ForegroundColor Green
-Write-Host " [THANH CONG] Da tao Shortcut tren man hinh Desktop!" -ForegroundColor Cyan
-Write-Host " Duong dan: $shortcutPath" -ForegroundColor Yellow
-Write-Host " Ban co the nhap dup chuot vao bieu tuong tren Desktop"
-Write-Host " de khoi dong Antigravity kem hoat canh Anime bat cu luc nao!"
+Write-Host " [THANH CONG] Da tao & khoa Shortcut tai tat ca vi tri!" -ForegroundColor Cyan
+Write-Host " Gio day khi ban go Antigravity tren Windows hoac nhap vao"
+Write-Host " Desktop / Start Menu se luon chay launcher tuy bien!"
 Write-Host "==========================================================" -ForegroundColor Green

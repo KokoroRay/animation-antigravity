@@ -1,10 +1,46 @@
 #!/usr/bin/env node
 import { spawn, execSync } from 'node:child_process';
 import { createServer } from 'node:net';
-import { existsSync } from 'node:fs';
+import { existsSync, writeFileSync, readFileSync, unlinkSync } from 'node:fs';
 import { join } from 'node:path';
-import { homedir, platform } from 'node:os';
+import { homedir, platform, tmpdir } from 'node:os';
 import { injectIntoPort } from '../extension/run.mjs';
+
+const LOCK_FILE = join(tmpdir(), 'antigravity-launcher.lock');
+
+function acquireLock() {
+  if (existsSync(LOCK_FILE)) {
+    try {
+      const data = JSON.parse(readFileSync(LOCK_FILE, 'utf8'));
+      const pid = data.pid;
+      if (pid && typeof pid === 'number') {
+        try {
+          process.kill(pid, 0);
+          console.log(`[Thông báo] Trình khởi chạy Antigravity đang hoạt động (PID: ${pid}). Bỏ qua phiên gọi trùng lặp.`);
+          process.exit(0);
+        } catch (_) {
+          // Process does not exist anymore; stale lock
+        }
+      }
+    } catch (_) {}
+  }
+
+  try {
+    writeFileSync(LOCK_FILE, JSON.stringify({ pid: process.pid, time: Date.now() }), 'utf8');
+  } catch (_) {}
+
+  const cleanup = () => {
+    try {
+      if (existsSync(LOCK_FILE)) {
+        const data = JSON.parse(readFileSync(LOCK_FILE, 'utf8'));
+        if (data.pid === process.pid) unlinkSync(LOCK_FILE);
+      }
+    } catch (_) {}
+  };
+  process.on('exit', cleanup);
+  process.on('SIGINT', () => { cleanup(); process.exit(0); });
+  process.on('SIGTERM', () => { cleanup(); process.exit(0); });
+}
 
 // Find Antigravity executable on current OS
 function findAntigravityPath() {
@@ -57,36 +93,76 @@ async function getFreePort() {
   });
 }
 
-// Ensure no conflicting Antigravity instance is running without CDP
-async function ensureNoConflictingInstance() {
+// Check if an existing Antigravity process already has a CDP port enabled
+function getExistingCdpPort() {
   const os = platform();
-  if (process.argv.includes('--no-kill')) return;
-
-  try {
-    if (os === 'win32') {
-      const output = execSync('tasklist /FI "IMAGENAME eq Antigravity.exe" /NH', {
-        encoding: 'utf8',
-        stdio: ['pipe', 'pipe', 'ignore']
-      });
-      if (output.toLowerCase().includes('antigravity.exe')) {
-        console.log('[Thông báo] Phát hiện Antigravity đang chạy ngầm hoặc đang mở.');
-        console.log('>> Đang đóng phiên cũ để khởi động lại kèm cổng gỡ lỗi CDP (đảm bảo hiển thị hoạt cảnh mở đầu)...');
-        execSync('taskkill /F /IM Antigravity.exe /T', { stdio: 'ignore' });
-        await new Promise(r => setTimeout(r, 1500));
+  if (os === 'win32') {
+    try {
+      const stdout = execSync(
+        `powershell -NoProfile -Command "Get-CimInstance Win32_Process -Filter \\"Name='Antigravity.exe'\\" | Select-Object ProcessId, CommandLine | ConvertTo-Json -Compress"`,
+        { encoding: 'utf8', stdio: ['pipe', 'pipe', 'ignore'] }
+      ).trim();
+      if (!stdout) return null;
+      const list = JSON.parse(stdout);
+      const procs = Array.isArray(list) ? list : [list];
+      for (const p of procs) {
+        const match = (p.CommandLine || '').match(/--remote-debugging-port=(\d+)/);
+        if (match) {
+          const port = parseInt(match[1], 10);
+          if (port > 0) return port;
+        }
       }
-    } else if (os === 'darwin') {
-      execSync('pkill -f Antigravity', { stdio: 'ignore' });
-      await new Promise(r => setTimeout(r, 1000));
-    } else {
-      execSync('pkill -f antigravity', { stdio: 'ignore' });
-      await new Promise(r => setTimeout(r, 1000));
-    }
+    } catch (_) {}
+  }
+  return null;
+}
+
+// A normal Antigravity window cannot be attached to after it has started.
+// Starting another copy with CDP flags can leave a second, invisible process
+// with no page targets, so detect that case before attempting injection.
+function getAntigravityMainProcesses() {
+  if (platform() !== 'win32') return [];
+  try {
+    const stdout = execSync(
+      `powershell -NoProfile -Command "Get-CimInstance Win32_Process -Filter \\"Name='Antigravity.exe'\\" | Select-Object ProcessId, CommandLine | ConvertTo-Json -Compress"`,
+      { encoding: 'utf8', stdio: ['pipe', 'pipe', 'ignore'] }
+    ).trim();
+    if (!stdout) return [];
+    const result = JSON.parse(stdout);
+    const list = Array.isArray(result) ? result : [result];
+    return list.filter(p => p.CommandLine && !p.CommandLine.includes('--type='));
   } catch (_) {
-    // Process wasn't running
+    return [];
   }
 }
 
+function showWindowsMessage(title, message) {
+  if (platform() !== 'win32') return;
+  try {
+    const title64 = Buffer.from(title, 'utf8').toString('base64');
+    const message64 = Buffer.from(message, 'utf8').toString('base64');
+    const script = `Add-Type -AssemblyName PresentationFramework; $t=[Text.Encoding]::UTF8.GetString([Convert]::FromBase64String('${title64}')); $m=[Text.Encoding]::UTF8.GetString([Convert]::FromBase64String('${message64}')); [System.Windows.MessageBox]::Show($m, $t, 'OK', 'Warning') | Out-Null`;
+    const encoded = Buffer.from(script, 'utf16le').toString('base64');
+    execSync(`powershell -NoProfile -EncodedCommand ${encoded}`, { stdio: 'ignore' });
+  } catch (_) {}
+}
+
+// Check existing Antigravity instance with CDP
+async function ensureNoConflictingInstance() {
+  try {
+    const existingPort = getExistingCdpPort();
+    if (existingPort) {
+      console.log(`[Thông báo] Phát hiện Antigravity đang chạy với cổng gỡ lỗi CDP: ${existingPort}.`);
+      console.log('>> Tái sử dụng phiên hiện tại (không tắt ứng dụng)...');
+      return existingPort;
+    }
+  } catch (_) {}
+  return null;
+}
+
 async function main() {
+  acquireLock();
+
   console.log('========================================================');
   console.log('       ANTIGRAVITY CUSTOM STARTUP LAUNCHER             ');
   console.log('========================================================\n');
@@ -103,32 +179,52 @@ async function main() {
 
   console.log(`[1/4] Đã phát hiện Antigravity: ${appPath}`);
 
-  // Check and close existing instances
-  await ensureNoConflictingInstance();
+  const runningMainProcesses = getAntigravityMainProcesses();
+  const runningWithoutCdp = runningMainProcesses.filter(p => !/--remote-debugging-port=\d+/.test(p.CommandLine || ''));
+  if (runningWithoutCdp.length) {
+    const pids = runningWithoutCdp.map(p => p.ProcessId).join(', ');
+    const message = `Antigravity đang mở trực tiếp (PID ${pids}) nên không thể tiêm hoạt cảnh vào phiên này.\n\nHãy lưu công việc, đóng tất cả cửa sổ Antigravity, đợi ứng dụng thoát hẳn, rồi mở lại bằng biểu tượng Antigravity trên Desktop hoặc Start Menu.`;
+    console.error(`[LỖI] ${message.replaceAll('\n', ' ')}`);
+    showWindowsMessage('Cần khởi động lại Antigravity', message);
+    process.exitCode = 2;
+    return;
+  }
 
-  const port = await getFreePort();
-  console.log(`[2/4] Cấp phát cổng gỡ lỗi CDP: 127.0.0.1:${port}`);
+  // Check existing instances
+  const existingPort = await ensureNoConflictingInstance();
+  let port = existingPort;
 
-  // Launch Antigravity with remote debugging enabled
-  console.log('[3/4] Đang khởi chạy Antigravity với cổng CDP...');
-  const child = spawn(appPath, [
-    `--remote-debugging-address=127.0.0.1`,
-    `--remote-debugging-port=${port}`
-  ], {
-    detached: true,
-    stdio: 'ignore'
-  });
+  if (port) {
+    console.log(`[2/4] Sử dụng cổng gỡ lỗi CDP hiện hữu: 127.0.0.1:${port}`);
+  } else {
+    port = await getFreePort();
+    console.log(`[2/4] Cấp phát cổng gỡ lỗi CDP: 127.0.0.1:${port}`);
 
-  child.unref();
+    // Launch Antigravity with remote debugging enabled
+    console.log('[3/4] Đang khởi chạy Antigravity với cổng CDP...');
+    const child = spawn(appPath, [
+      `--remote-debugging-address=127.0.0.1`,
+      `--remote-debugging-port=${port}`,
+      `--background-color=#000000`,
+      `--force-dark-mode`,
+      `--enable-features=WebUIDarkMode`
+    ], {
+      detached: true,
+      stdio: 'ignore'
+    });
+
+    child.unref();
+  }
 
   console.log('[4/4] Đang kết nối và tiêm hoạt cảnh khởi động vào Antigravity...');
   try {
     await injectIntoPort(port);
-    console.log('\n>> HOÀN TẤT: Hoạt cảnh Neural Awakening đang phát trên Antigravity!');
-    console.log('>> Live video wallpaper sẽ tự động duy trì trong Antigravity khi hoạt cảnh kết thúc.');
-    console.log('>> Nhấn Ctrl+Alt+B (hoặc Cmd+Option+B) bất kỳ lúc nào để tùy chỉnh theme & video.\n');
   } catch (err) {
     console.error('\n[Lỗi kết nối]', err.message);
+    showWindowsMessage(
+      'Không khởi chạy được hoạt cảnh Antigravity',
+      `Launcher không tìm thấy trang Antigravity để gắn hoạt cảnh.\n\n${err.message}\n\nHãy đóng hoàn toàn Antigravity rồi mở lại bằng shortcut launcher.`
+    );
     process.exit(1);
   }
 }

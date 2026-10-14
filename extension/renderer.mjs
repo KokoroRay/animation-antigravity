@@ -5,23 +5,91 @@ export function installRenderer(payload, mount) {
 
   let frame = null, watchdog = 0, observer = null, priorFocus = null, disposed = false;
   let ready = false, completed = false, phase = 'loading', wallpaperURL = null, lastImage = null;
-  let liveVideo = null, scrim = null, themeButton = null, pendingBackgroundConfig = null;
+  let liveVideo = null, scrim = null, themeButton = null, pendingBackgroundConfig = null, btnWatchInterval = null;
   const root = document.documentElement;
   const before = new Map(['--antigravity-wallpaper', '--antigravity-wash'].map(k => [k, [root.style.getPropertyValue(k), root.style.getPropertyPriority(k)]]));
   const originalAttribute = root.getAttribute('data-antigravity-skin');
 
-  // Create persistent Blob URL for video from base64 (completely bypasses Chromium file:/// security restrictions)
-  let videoBlobUrl = null;
-  if (payload.assets && payload.assets.videoBase64) {
-    try {
-      const bin = atob(payload.assets.videoBase64);
-      const bytes = new Uint8Array(bin.length);
-      for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
-      videoBlobUrl = URL.createObjectURL(new Blob([bytes], { type: 'video/mp4' }));
-      payload.assets.video = videoBlobUrl;
-    } catch (err) {
-      console.error('Antigravity: Failed to create video blob URL:', err);
+  // Clear curtains only if skipping intro; otherwise keep them until overlay mounts to prevent flashing
+  if (payload.skipIntro === true) {
+    const leftoverCurtain = document.getElementById('antigravity-instant-curtain');
+    if (leftoverCurtain) leftoverCurtain.remove();
+    const leftoverPreCurtain = document.getElementById('antigravity-pre-curtain');
+    if (leftoverPreCurtain) leftoverPreCurtain.remove();
+  }
+
+  // Resume position (ms) when the page reloaded in the middle of the intro
+  const startAtMs = Math.max(0, Number(window.__antigravityStartAt) || 0);
+  try { delete window.__antigravityStartAt; } catch (_) {}
+
+  // Set native window/Electron theme-color
+  try {
+    let metaTheme = document.querySelector('meta[name="theme-color"]');
+    if (!metaTheme && document.head) {
+      metaTheme = document.createElement('meta');
+      metaTheme.name = 'theme-color';
+      document.head.appendChild(metaTheme);
     }
+    if (metaTheme) metaTheme.content = '#15141b';
+  } catch (_) {}
+
+  // Create persistent Blob URLs for video (completely bypasses Chromium mixed-content & range restrictions)
+  let videoBlobUrl = null;
+  let wallpaperVideoBlobUrl = null;
+  const preloadPromises = [];
+
+  async function resolveUrlToBlob(url) {
+    if (!url || typeof url !== 'string' || url.startsWith('blob:') || url.startsWith('data:')) return url;
+    try {
+      const resp = await fetch(url);
+      if (!resp.ok) return url;
+      const blob = await resp.blob();
+      return URL.createObjectURL(blob);
+    } catch (_) {
+      return url;
+    }
+  }
+
+  // Preload and convert startup video to blob URL for instant 60 FPS playback
+  if (payload.assets && payload.assets.video && !payload.assets.video.startsWith('blob:')) {
+    const p1 = resolveUrlToBlob(payload.assets.video).then(blobUrl => {
+      if (!disposed && blobUrl && blobUrl.startsWith('blob:')) {
+        videoBlobUrl = blobUrl;
+        payload.assets.video = blobUrl;
+        if (frame && frame.contentWindow) {
+          const doc = frame.contentDocument;
+          const v = doc?.querySelector('.character-video');
+          if (v && v.src !== blobUrl) {
+            const wasPlaying = !v.paused;
+            const curTime = v.currentTime;
+            v.src = blobUrl;
+            if (curTime > 0) v.currentTime = curTime;
+            if (wasPlaying) v.play().catch(() => {});
+          }
+          const m = doc?.querySelector('.master-cinematic-video');
+          if (m && m.src !== blobUrl) {
+            m.src = blobUrl;
+            m.load();
+          }
+        }
+      }
+    });
+    preloadPromises.push(p1);
+  }
+
+  // Preload and convert live wallpaper video to blob URL
+  if (payload.assets && payload.assets.wallpaperVideo && !payload.assets.wallpaperVideo.startsWith('blob:')) {
+    const p2 = resolveUrlToBlob(payload.assets.wallpaperVideo).then(blobUrl => {
+      if (!disposed && blobUrl && blobUrl.startsWith('blob:')) {
+        wallpaperVideoBlobUrl = blobUrl;
+        payload.assets.wallpaperVideo = blobUrl;
+        if (liveVideo && liveVideo.src !== blobUrl) {
+          liveVideo.src = blobUrl;
+          liveVideo.play().catch(() => {});
+        }
+      }
+    });
+    preloadPromises.push(p2);
   }
 
   const style = document.createElement('style');
@@ -33,16 +101,21 @@ export function installRenderer(payload, mount) {
   function saveConfig(data) {
     try {
       if (data && typeof data === 'object') {
+        const isCustomVid = typeof data.video === 'string' && !data.video.startsWith('blob:') && !data.video.includes('/startup-video.mp4') && !data.video.includes('/wallpaper-tiktok.mp4') && !data.video.startsWith('http://127.0.0.1:') && !data.video.startsWith('http://localhost:');
         const toSave = {
           strength: data.strength,
           editorOpacity: data.editorOpacity,
           themePreset: data.themePreset,
           palette: data.palette,
           isVideo: data.isVideo,
-          video: (typeof data.video === 'string' && !data.video.startsWith('blob:')) ? data.video : undefined,
+          video: isCustomVid ? data.video : undefined,
           image: (typeof data.image === 'string' && !data.image.startsWith('blob:')) ? data.image : undefined
         };
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(toSave));
+        const str = JSON.stringify(toSave);
+        localStorage.setItem(STORAGE_KEY, str);
+        if (typeof window.__antigravitySaveDiskConfig === 'function') {
+          window.__antigravitySaveDiskConfig(str);
+        }
       }
     } catch (_) {}
   }
@@ -55,10 +128,15 @@ export function installRenderer(payload, mount) {
     return null;
   }
 
-  function removeOverlay() {
+  function removeOverlay(reason = 'unspecified') {
+    console.log('[Antigravity Renderer] removeOverlay() called! Reason:', reason);
     clearTimeout(watchdog);
     observer?.disconnect();
     observer = null;
+    const c = document.getElementById('antigravity-instant-curtain');
+    if (c) c.remove();
+    const pc = document.getElementById('antigravity-pre-curtain');
+    if (pc) pc.remove();
     frame?.remove();
     frame = null;
     if (priorFocus?.isConnected) priorFocus.focus();
@@ -84,54 +162,61 @@ export function installRenderer(payload, mount) {
   }
 
   function createThemeButton() {
-    if (themeButton || !document.body) return;
-    themeButton = document.createElement('button');
-    themeButton.id = 'antigravity-theme-toggle-btn';
-    themeButton.type = 'button';
-    themeButton.title = 'Tùy chỉnh Theme & Live Wallpaper (F4 hoặc Ctrl+Alt+B)';
-    themeButton.innerHTML = 'Theme (F4)';
-    Object.assign(themeButton.style, {
-      position: 'fixed',
-      bottom: '10px',
-      right: '18px',
-      zIndex: '99999',
-      padding: '3px 10px',
-      fontSize: '11px',
-      fontFamily: 'system-ui, -apple-system, sans-serif',
-      fontWeight: '500',
-      color: '#f1f5f9',
-      background: 'rgba(10, 14, 26, 0.85)',
-      border: '1px solid rgba(56, 189, 248, 0.4)',
-      borderRadius: '16px',
-      cursor: 'pointer',
-      backdropFilter: 'blur(8px)',
-      boxShadow: '0 2px 10px rgba(0, 0, 0, 0.45)',
-      transition: 'all 0.2s ease',
-      opacity: '0.85'
-    });
-    themeButton.addEventListener('mouseenter', () => {
-      themeButton.style.opacity = '1';
-      themeButton.style.borderColor = '#38bdf8';
-      themeButton.style.boxShadow = '0 0 12px rgba(56, 189, 248, 0.5)';
-    });
-    themeButton.addEventListener('mouseleave', () => {
-      themeButton.style.opacity = '0.85';
-      themeButton.style.borderColor = 'rgba(56, 189, 248, 0.4)';
-      themeButton.style.boxShadow = '0 2px 10px rgba(0, 0, 0, 0.45)';
-    });
-    themeButton.addEventListener('click', () => show(true));
+    if (!document.body) return;
+    if (themeButton && themeButton.isConnected) return;
+    if (!themeButton) {
+      themeButton = document.createElement('button');
+      themeButton.id = 'antigravity-theme-toggle-btn';
+      themeButton.type = 'button';
+      themeButton.title = 'Tùy chỉnh Theme & Live Wallpaper (F4 hoặc Ctrl+Alt+B)';
+      themeButton.innerHTML = 'Theme (F4)';
+      Object.assign(themeButton.style, {
+        position: 'fixed',
+        bottom: '10px',
+        right: '18px',
+        zIndex: '99999',
+        padding: '3px 10px',
+        fontSize: '11px',
+        fontFamily: 'system-ui, -apple-system, sans-serif',
+        fontWeight: '500',
+        color: '#f1f5f9',
+        background: 'rgba(10, 14, 26, 0.85)',
+        border: '1px solid rgba(56, 189, 248, 0.4)',
+        borderRadius: '16px',
+        cursor: 'pointer',
+        backdropFilter: 'blur(8px)',
+        boxShadow: '0 2px 10px rgba(0, 0, 0, 0.45)',
+        transition: 'all 0.2s ease',
+        opacity: '0.85'
+      });
+      themeButton.addEventListener('mouseenter', () => {
+        themeButton.style.opacity = '1';
+        themeButton.style.borderColor = '#38bdf8';
+        themeButton.style.boxShadow = '0 0 12px rgba(56, 189, 248, 0.5)';
+      });
+      themeButton.addEventListener('mouseleave', () => {
+        themeButton.style.opacity = '0.85';
+        themeButton.style.borderColor = 'rgba(56, 189, 248, 0.4)';
+        themeButton.style.boxShadow = '0 2px 10px rgba(0, 0, 0, 0.45)';
+      });
+      themeButton.addEventListener('click', () => show(true));
+    }
     document.body.appendChild(themeButton);
   }
 
   function dispose() {
     if (disposed) return;
     disposed = true;
+    if (btnWatchInterval) clearInterval(btnWatchInterval);
+    btnWatchInterval = null;
     removeOverlay();
     removeLiveVideo();
     removeThemeButton();
     style.remove();
     if (videoBlobUrl) URL.revokeObjectURL(videoBlobUrl);
     videoBlobUrl = null;
+    if (wallpaperVideoBlobUrl) URL.revokeObjectURL(wallpaperVideoBlobUrl);
+    wallpaperVideoBlobUrl = null;
     if (wallpaperURL) URL.revokeObjectURL(wallpaperURL);
     wallpaperURL = null;
     lastImage = null;
@@ -173,7 +258,7 @@ export function installRenderer(payload, mount) {
       // Direct Tailwind UI variable updates on Antigravity workbench
       root.style.setProperty('--color-background', `rgba(${b} / ${op})`);
       root.style.setProperty('--background', `rgba(${b} / ${op})`);
-      root.style.setProperty('--sidebar', `rgba(${b} / 0.75)`);
+      root.style.setProperty('--sidebar', `rgba(${b} / 0.82)`);
       root.style.setProperty('--color-sidebar-secondary', `rgba(${b} / 0.82)`);
       root.style.setProperty('--color-card', `rgba(${b} / 0.65)`);
       root.style.setProperty('--card', `rgba(${b} / 0.65)`);
@@ -218,11 +303,13 @@ export function installRenderer(payload, mount) {
     if (!document.body) return;
 
     // Live Video Wallpaper Support
-    const resolvedVideo = (typeof data.video === 'string' && !data.video.startsWith('blob:'))
+    const isCustomVid = typeof data.video === 'string' && !data.video.startsWith('blob:') && !data.video.includes('/startup-video.mp4') && !data.video.includes('/wallpaper-tiktok.mp4') && !data.video.startsWith('http://127.0.0.1:') && !data.video.startsWith('http://localhost:');
+    const resolvedVideo = isCustomVid
       ? data.video
-      : (payload.assets?.video || videoBlobUrl);
+      : (payload.assets?.wallpaperVideo || payload.assets?.video || videoBlobUrl);
 
-    if (data.isVideo && resolvedVideo && strength > 0) {
+    const shouldSpawnLiveVideo = (payload.skipIntro || phase === 'complete') && Boolean(data.isVideo && resolvedVideo && strength > 0);
+    if (shouldSpawnLiveVideo) {
       if (!liveVideo) {
         liveVideo = document.createElement('video');
         liveVideo.id = 'antigravity-live-video-wallpaper';
@@ -246,6 +333,13 @@ export function installRenderer(payload, mount) {
           transform: 'translate3d(0, 0, 0)',
           transition: 'opacity 0.4s ease'
         });
+        liveVideo.addEventListener('loadeddata', () => liveVideo?.play().catch(() => {}));
+        liveVideo.addEventListener('canplay', () => liveVideo?.play().catch(() => {}));
+        liveVideo.addEventListener('pause', () => {
+          if (!disposed && !liveVideo?.ended) {
+            liveVideo?.play().catch(() => {});
+          }
+        });
         document.body.appendChild(liveVideo);
       }
       if (!scrim) {
@@ -267,7 +361,14 @@ export function installRenderer(payload, mount) {
   }
 
   function show(settings = false) {
+    console.log('[Antigravity Renderer] show() called. skipIntro:', payload.skipIntro, 'settings:', settings, 'disposed:', disposed, 'frame:', Boolean(frame));
     if (disposed || frame) return;
+    if (!settings && payload.skipIntro === true) {
+      console.log('[Antigravity Renderer] skipIntro is true! Marking complete.');
+      completed = true;
+      phase = 'complete';
+      return;
+    }
     priorFocus = document.activeElement;
     phase = settings ? 'settings' : 'loading';
     frame = document.createElement('iframe');
@@ -279,8 +380,9 @@ export function installRenderer(payload, mount) {
       width: '100%',
       height: '100%',
       border: '0',
-      zIndex: '2147483646',
-      background: 'transparent',
+      zIndex: '2147483647',
+      background: '#000000',
+      backgroundColor: '#000000',
       colorScheme: 'dark'
     });
 
@@ -297,7 +399,8 @@ export function installRenderer(payload, mount) {
         win.ANTIGRAVITY_EXTERNAL = true;
         win.ANTIGRAVITY_ASSETS = payload.assets;
         win.ANTIGRAVITY_OPEN_SETTINGS = settings;
-        win.ANTIGRAVITY_SAVED_CONFIG = loadConfig();
+        win.ANTIGRAVITY_START_AT = settings ? 0 : startAtMs;
+        win.ANTIGRAVITY_SAVED_CONFIG = payload.diskConfig || loadConfig();
         win.ANTIGRAVITY_SEND = data => message({ source: win, data });
 
         // Backward compatibility
@@ -309,6 +412,10 @@ export function installRenderer(payload, mount) {
 
         mount(win);
         current.focus();
+
+        // Seamless zero-gap handoff: remove the black curtain now that the intro frame has loaded & rendered
+        document.getElementById('antigravity-pre-curtain')?.remove();
+        document.getElementById('antigravity-instant-curtain')?.remove();
       } catch (err) {
         phase = 'failed';
         console.error('Antigravity extension injection error:', err);
@@ -317,17 +424,18 @@ export function installRenderer(payload, mount) {
     }, { once: true });
 
     current.src = 'about:blank';
-    document.body.appendChild(current);
+    (document.documentElement || document.body).appendChild(current);
     watchdog = setTimeout(() => {
       phase = 'timeout';
       removeOverlay();
-    }, 25000);
+    }, 35000);
   }
 
   function message(event) {
     if (!frame || event.source !== frame.contentWindow) return;
     const data = event.data;
     if (!data || (data.type !== 'antigravity-boot' && data.type !== 'aemeath-boot')) return;
+    console.log('[Antigravity Renderer] message received from iframe:', data?.action);
 
     if (data.action === 'background') background(data);
     if (data.action === 'saveConfig') {
@@ -338,17 +446,29 @@ export function installRenderer(payload, mount) {
     if (data.action === 'complete') {
       completed = true;
       phase = 'complete';
-      if (liveVideo && Number.isFinite(data.videoTime)) {
-        try { liveVideo.currentTime = data.videoTime; } catch (_) {}
+      if (pendingBackgroundConfig) {
+        background(pendingBackgroundConfig);
       }
-      removeOverlay();
+      if (liveVideo) {
+        if (Number.isFinite(data.videoTime)) {
+          try { liveVideo.currentTime = data.videoTime; } catch (_) {}
+        }
+        liveVideo.play().catch(() => {});
+      }
+      if (frame) {
+        frame.style.transition = 'opacity 0.35s ease';
+        frame.style.opacity = '0';
+        setTimeout(() => removeOverlay('complete'), 350);
+      } else {
+        removeOverlay('complete');
+      }
       createThemeButton();
     }
-    if (data.action === 'assetError') { phase = 'failed'; removeOverlay(); }
+    if (data.action === 'assetError') { phase = 'failed'; removeOverlay('assetError'); }
     if (data.action === 'settings-close') {
       phase = 'playing';
       clearTimeout(watchdog);
-      removeOverlay();
+      removeOverlay('settings-close');
     }
     if (data.action === 'restore') dispose();
   }
@@ -377,6 +497,7 @@ export function installRenderer(payload, mount) {
     dispose,
     openSettings: () => show(true),
     status: () => ({
+      intro: payload.skipIntro !== true,
       ready,
       completed,
       phase,
@@ -400,10 +521,24 @@ export function installRenderer(payload, mount) {
   };
   background(savedConfig);
 
-  function onBodyReady() {
+  btnWatchInterval = setInterval(() => {
+    if (!disposed && document.body && (!themeButton || !themeButton.isConnected)) {
+      createThemeButton();
+    }
+  }, 1500);
+
+  async function onBodyReady() {
+    if (preloadPromises.length > 0) {
+      await Promise.race([
+        Promise.all(preloadPromises),
+        new Promise(r => setTimeout(r, 1200))
+      ]);
+    }
+    if (disposed) return;
     if (pendingBackgroundConfig) {
       background(pendingBackgroundConfig);
     }
+    createThemeButton();
     show();
   }
 

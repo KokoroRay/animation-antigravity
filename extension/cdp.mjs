@@ -2,17 +2,21 @@
 export function pageTarget(target) {
   try {
     if (target.type !== 'page') return false;
+    if (!target.url || typeof target.url !== 'string') return false;
+    // Splash screen in Antigravity is a data: URL - ignore it completely!
+    if (target.url.startsWith('data:')) return false;
     const url = new URL(target.url);
     // Ignore devtools internal pages
-    if (url.protocol === 'devtools:' || url.protocol === 'chrome-extension:') return false;
+    if (url.protocol === 'devtools:' || url.protocol === 'chrome-extension:' || url.protocol === 'blob:') return false;
     // Antigravity window loads https://127.0.0.1:<port>/ or http://localhost/
-    if (url.hostname === '127.0.0.1' || url.hostname === 'localhost' || target.title?.includes('Antigravity')) {
-      return !/notification|mini|popover|quick.chat/i.test(target.url);
+    if (url.protocol === 'http:' || url.protocol === 'https:') {
+      if (url.hostname === '127.0.0.1' || url.hostname === 'localhost' || target.title?.includes('Antigravity')) {
+        return !/notification|mini|popover|quick.chat/i.test(target.url);
+      }
     }
-    // Fallback: any non-internal page with webSocketDebuggerUrl
-    return Boolean(target.webSocketDebuggerUrl);
+    return false;
   } catch {
-    return target.type === 'page' && Boolean(target.webSocketDebuggerUrl);
+    return false;
   }
 }
 
@@ -44,6 +48,8 @@ export async function connect(url, Socket = WebSocket) {
     }, { once: true });
   });
 
+  const listeners = new Map();
+
   socket.addEventListener('message', event => {
     let data;
     try {
@@ -51,6 +57,17 @@ export async function connect(url, Socket = WebSocket) {
     } catch {
       return;
     }
+
+    if (data.method) {
+      const list = listeners.get(data.method);
+      if (list) {
+        for (const fn of list) {
+          try { fn(data.params); } catch (e) { console.error(e); }
+        }
+      }
+      return;
+    }
+
     const request = pending.get(data.id);
     if (!request) return;
     pending.delete(data.id);
@@ -62,15 +79,21 @@ export async function connect(url, Socket = WebSocket) {
     }
   });
 
+  let closed = false;
   socket.addEventListener('close', () => {
+    closed = true;
     for (const req of pending.values()) {
       clearTimeout(req.timer);
       req.reject(new Error('Kết nối gỡ lỗi đã đóng'));
     }
     pending.clear();
+    listeners.clear();
   });
 
   return {
+    get closed() {
+      return closed;
+    },
     call(method, params = {}, timeout = 12000) {
       return new Promise((resolve, reject) => {
         const id = ++serial;
@@ -87,6 +110,14 @@ export async function connect(url, Socket = WebSocket) {
           reject(err);
         }
       });
+    },
+    on(method, callback) {
+      if (!listeners.has(method)) listeners.set(method, new Set());
+      listeners.get(method).add(callback);
+      return () => listeners.get(method)?.delete(callback);
+    },
+    off(method, callback) {
+      listeners.get(method)?.delete(callback);
     },
     close() {
       socket.close();

@@ -19,7 +19,7 @@
 
     <section class="window" aria-label="Antigravity Startup Sequence">
       <!-- Background Scene -->
-      <div class="scene authentic-mode" id="scene" aria-hidden="true">
+      <div class="scene" id="scene" aria-hidden="true">
         <!-- Master cinematic video layer for the adapted startup animation -->
         <video class="master-cinematic-video" id="master-video" src="assets/startup-video.mp4" playsinline muted preload="auto"></video>
 
@@ -40,7 +40,7 @@
         <div class="character-viewport">
           <div class="character-stage" id="character-stage">
             <!-- Live Anime Video (Appears & fades in) -->
-            <video class="character-video" src="assets/startup-video.mp4" playsinline muted preload="auto" loop></video>
+            <video class="character-video" src="assets/elaina-video.mp4" playsinline muted preload="auto" loop></video>
 
             <!-- Fallback Artwork -->
             <img class="character-artwork" src="assets/artwork.jpg" alt="" decoding="async">
@@ -92,9 +92,17 @@
           <div class="hud-bottom-tracker"><div class="hud-bottom-fill" id="bottom-progress"></div></div>
         </div>
 
-        <!-- Flash & Shutter Closing Line -->
+        <!-- Initial Boot Screen (0.0s – 1.4s) - Minimal & Clean -->
+        <div class="boot-curtain" id="boot-curtain">
+          <div class="boot-spinner">
+            <div class="boot-ring"></div>
+          </div>
+          <div class="boot-title">INITIALIZING NEURAL AWAKENING...</div>
+          <div class="boot-subtitle">SYNCHRONIZING QUANTUM MATRIX · 60 FPS</div>
+        </div>
+
+        <!-- Transition Flash -->
         <div class="transition-flash"></div>
-        <div class="shutter-line"></div>
       </div>
 
       <!-- Window Traffic Dots -->
@@ -114,7 +122,7 @@
         <!-- Video Selection -->
         <div class="video-choice-container">
           <div class="video-preview-wrapper">
-            <video id="video-settings-preview" src="assets/startup-video.mp4" muted loop autoplay playsinline></video>
+            <video id="video-settings-preview" src="assets/wallpaper-tiktok.mp4" muted loop autoplay playsinline></video>
             <label class="video-upload-label">
               <span>Đổi video MP4/WebM khác</span>
               <input id="video-file" type="file" accept="video/mp4,video/webm" aria-label="Chọn video mới">

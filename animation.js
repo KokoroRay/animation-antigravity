@@ -7,14 +7,14 @@
   const scene = $('#scene') || $('.scene');
   const masterVideo = $('#master-video') || $('.master-cinematic-video');
   const isAuthentic = Boolean(scene && scene.classList.contains('authentic-mode') && masterVideo);
-  let TOTAL_DURATION = isAuthentic ? 10000 : 12500;
+  let TOTAL_DURATION = 10000;
   const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   const embedded = window.parent !== window && (window.ANTIGRAVITY_EXTERNAL || window.AEMEATH_EXTERNAL || new URLSearchParams(location.search).has('embedded'));
 
   const defaultAssets = {
     artwork: 'assets/artwork.jpg',
     avatar: 'assets/avatar.jpg',
-    video: 'assets/startup-video.mp4'
+    video: 'assets/elaina-video.mp4'
   };
   const assets = window.ANTIGRAVITY_ASSETS || window.AEMEATH_ASSETS || defaultAssets;
 
@@ -37,6 +37,7 @@
   const timecode = $('#timecode');
   const flash = $('.transition-flash');
   const shutter = $('.shutter-line');
+  const bootCurtain = $('#boot-curtain') || $('.boot-curtain');
   const slider = $('#timeline');
   const pauseBtn = $('#pause');
   const replayBtn = $('#replay');
@@ -49,11 +50,30 @@
   const editorOpacityValue = $('#editor-opacity-value');
 
   // Ensure default media paths are populated immediately (vital for embedded iframe mode)
-  if (masterVideo && (!masterVideo.getAttribute('src') || masterVideo.getAttribute('src') === '')) {
-    masterVideo.src = assets.video;
+  if (masterVideo) {
+    masterVideo.muted = true;
+    masterVideo.defaultMuted = true;
+    masterVideo.playsInline = true;
+    masterVideo.autoplay = true;
+    if (!masterVideo.getAttribute('src') || masterVideo.getAttribute('src') === '') {
+      masterVideo.src = assets.video;
+    }
   }
-  if (video && (!video.getAttribute('src') || video.getAttribute('src') === '')) {
-    video.src = assets.video;
+  if (video) {
+    video.muted = true;
+    video.defaultMuted = true;
+    video.playsInline = true;
+    video.autoplay = true;
+    if (!video.getAttribute('src') || video.getAttribute('src') === '') {
+      video.src = assets.video;
+    }
+    video.addEventListener('error', () => {
+      console.warn('[Antigravity] Video load notice, keeping artwork visible');
+      if (artwork) {
+        artwork.style.opacity = '1';
+        artwork.style.filter = 'none';
+      }
+    });
   }
   if (artwork && (!artwork.getAttribute('src') || artwork.getAttribute('src') === '')) {
     artwork.src = assets.artwork;
@@ -90,7 +110,7 @@
 
   // 49 sci-fi script lines for the adapted startup animation
   const CODE_LINES = [
-    { text: "// 凝神静气 · 开启星脉", type: "comment" },
+    { text: "// Initializing neural core · Starlight online", type: "comment" },
     { text: "const seed = 'ocean://memory';", type: "code", tokens: [
       { t: "keyword", v: "const " }, { t: "ident", v: "seed" }, { t: "op", v: " = " }, { t: "string", v: "'ocean://memory'" }, { t: "op", v: ";" }
     ]},
@@ -103,7 +123,7 @@
     { text: "clock.rate = 60; // synchronize light particles", type: "code", tokens: [
       { t: "ident", v: "clock" }, { t: "op", v: "." }, { t: "prop", v: "rate" }, { t: "op", v: " = " }, { t: "number", v: "60" }, { t: "op", v: "; " }, { t: "comment", v: "// synchronize light particles" }
     ]},
-    { text: "// 光子阵列 · 信号连入", type: "comment" },
+    { text: "// Photon array · Signal link connected", type: "comment" },
     { text: "const photons = collect('cyan');", type: "code", tokens: [
       { t: "keyword", v: "const " }, { t: "ident", v: "photons" }, { t: "op", v: " = " }, { t: "fn", v: "collect" }, { t: "op", v: "(" }, { t: "string", v: "'cyan'" }, { t: "op", v: ");" }
     ]},
@@ -113,7 +133,7 @@
     { text: "await photons.align(); // spectrum calibrated", type: "code", tokens: [
       { t: "keyword", v: "await " }, { t: "ident", v: "photons" }, { t: "op", v: "." }, { t: "fn", v: "align" }, { t: "op", v: "(); " }, { t: "comment", v: "// spectrum calibrated" }
     ]},
-    { text: "// 搜集微光 · 重建轮廓", type: "comment" },
+    { text: "// Collecting luminescence · Rebuilding strands", type: "comment" },
     { text: "const light = scan('hair');", type: "code", tokens: [
       { t: "keyword", v: "const " }, { t: "ident", v: "light" }, { t: "op", v: " = " }, { t: "fn", v: "scan" }, { t: "op", v: "(" }, { t: "string", v: "'hair'" }, { t: "op", v: ");" }
     ]},
@@ -126,7 +146,7 @@
     { text: "light.tint = ['cyan', 'violet', 'ice'];", type: "code", tokens: [
       { t: "ident", v: "light" }, { t: "op", v: "." }, { t: "prop", v: "tint" }, { t: "op", v: " = [" }, { t: "string", v: "'cyan'" }, { t: "op", v: ", " }, { t: "string", v: "'violet'" }, { t: "op", v: ", " }, { t: "string", v: "'ice'" }, { t: "op", v: "];" }
     ]},
-    { text: "// 深空链路 · 初始化", type: "comment" },
+    { text: "// Deep-space link · Establishing socket", type: "comment" },
     { text: "const link = connect('deep-space');", type: "code", tokens: [
       { t: "keyword", v: "const " }, { t: "ident", v: "link" }, { t: "op", v: " = " }, { t: "fn", v: "connect" }, { t: "op", v: "(" }, { t: "string", v: "'deep-space'" }, { t: "op", v: ");" }
     ]},
@@ -136,17 +156,17 @@
     { text: "link.signal = 1.0;", type: "code", tokens: [
       { t: "ident", v: "link" }, { t: "op", v: "." }, { t: "prop", v: "signal" }, { t: "op", v: " = " }, { t: "number", v: "1.0" }, { t: "op", v: ";" }
     ]},
-    { text: "// 解码记忆图谱 · 密集与网格星脉同步", type: "comment" },
+    { text: "// Decoding memory graph · Topology sync", type: "comment" },
     { text: "const face = await decode(); // resolve topology", type: "code", tokens: [
       { t: "keyword", v: "const " }, { t: "ident", v: "face" }, { t: "op", v: " = " }, { t: "keyword", v: "await " }, { t: "fn", v: "decode" }, { t: "op", v: "(); " }, { t: "comment", v: "// resolve topology" }
     ]},
-    { text: "face.mesh({ density: 0.96 });", type: "code", tokens: [
-      { t: "ident", v: "face" }, { t: "op", v: "." }, { t: "fn", v: "mesh" }, { t: "op", v: "({ " }, { t: "prop", v: "density" }, { t: "op", v: ": " }, { t: "number", v: "0.96" }, { t: "op", v: " });" }
+    { text: "face.align({ precision: 'high' });", type: "code", tokens: [
+      { t: "ident", v: "face" }, { t: "op", v: "." }, { t: "fn", v: "align" }, { t: "op", v: "({ " }, { t: "prop", v: "precision" }, { t: "op", v: ": " }, { t: "string", v: "'high'" }, { t: "op", v: " });" }
     ]},
     { text: "face.resolve();", type: "code", tokens: [
       { t: "ident", v: "face" }, { t: "op", v: "." }, { t: "fn", v: "resolve" }, { t: "op", v: "();" }
     ]},
-    { text: "// 曼陀罗线 · 浮现重绘", type: "comment" },
+    { text: "// Vector contours · Progressive laser reveal", type: "comment" },
     { text: "const contour = trace('silhouette');", type: "code", tokens: [
       { t: "keyword", v: "const " }, { t: "ident", v: "contour" }, { t: "op", v: " = " }, { t: "fn", v: "trace" }, { t: "op", v: "(" }, { t: "string", v: "'silhouette'" }, { t: "op", v: ");" }
     ]},
@@ -156,7 +176,7 @@
     { text: "await contour.reveal();", type: "code", tokens: [
       { t: "keyword", v: "await " }, { t: "ident", v: "contour" }, { t: "op", v: "." }, { t: "fn", v: "reveal" }, { t: "op", v: "();" }
     ]},
-    { text: "// 速度穿越 · 硝烟四散", type: "comment" },
+    { text: "// Stardust emission · Kinetic particle burst", type: "comment" },
     { text: "const trails = emit('stardust');", type: "code", tokens: [
       { t: "keyword", v: "const " }, { t: "ident", v: "trails" }, { t: "op", v: " = " }, { t: "fn", v: "emit" }, { t: "op", v: "(" }, { t: "string", v: "'stardust'" }, { t: "op", v: ");" }
     ]},
@@ -169,7 +189,7 @@
     { text: "await trails.cross();", type: "code", tokens: [
       { t: "keyword", v: "await " }, { t: "ident", v: "trails" }, { t: "op", v: "." }, { t: "fn", v: "cross" }, { t: "op", v: "();" }
     ]},
-    { text: "// 凝神静气 · 开启星脉", type: "comment" },
+    { text: "// Iris awakening · Synchronizing ocular aperture", type: "comment" },
     { text: "await eyes.open(0.85); // iris aperture synchronized", type: "code", tokens: [
       { t: "keyword", v: "await " }, { t: "ident", v: "eyes" }, { t: "op", v: "." }, { t: "fn", v: "open" }, { t: "op", v: "(" }, { t: "number", v: "0.85" }, { t: "op", v: "); " }, { t: "comment", v: "// iris aperture synchronized" }
     ]},
@@ -179,7 +199,7 @@
     { text: "pulse.glow('cyan');", type: "code", tokens: [
       { t: "ident", v: "pulse" }, { t: "op", v: "." }, { t: "fn", v: "glow" }, { t: "op", v: "(" }, { t: "string", v: "'cyan'" }, { t: "op", v: ");" }
     ]},
-    { text: "// 灵犀核心 · 视觉定焦", type: "comment" },
+    { text: "// Focal stabilization · Iris bloom lock", type: "comment" },
     { text: "pulse.phase = clock.phase;", type: "code", tokens: [
       { t: "ident", v: "pulse" }, { t: "op", v: "." }, { t: "prop", v: "phase" }, { t: "op", v: " = " }, { t: "ident", v: "clock" }, { t: "op", v: "." }, { t: "prop", v: "phase" }, { t: "op", v: ";" }
     ]},
@@ -189,7 +209,7 @@
     { text: "await pulse.stabilize();", type: "code", tokens: [
       { t: "keyword", v: "await " }, { t: "ident", v: "pulse" }, { t: "op", v: "." }, { t: "fn", v: "stabilize" }, { t: "op", v: "();" }
     ]},
-    { text: "// 闭目沉思之境已尽 · 浮光跃金迎客往来", type: "comment" },
+    { text: "// Meditation complete · Attaching subject to viewport", type: "comment" },
     { text: "scene.attach(face);", type: "code", tokens: [
       { t: "ident", v: "scene" }, { t: "op", v: "." }, { t: "fn", v: "attach" }, { t: "op", v: "(" }, { t: "ident", v: "face" }, { t: "op", v: ");" }
     ]},
@@ -199,7 +219,7 @@
     { text: "scene.focus = eyes.center;", type: "code", tokens: [
       { t: "ident", v: "scene" }, { t: "op", v: "." }, { t: "prop", v: "focus" }, { t: "op", v: " = " }, { t: "ident", v: "eyes" }, { t: "op", v: "." }, { t: "prop", v: "center" }, { t: "op", v: ";" }
     ]},
-    { text: "// 镜头拉远至正常比例 · 并在此处开始播放", type: "comment" },
+    { text: "// Camera zoom out to 1.0x · Initiating live stream", type: "comment" },
     { text: "await scene.zoomOut({ duration: 'normal', scale: 1.0 });", type: "code", tokens: [
       { t: "keyword", v: "await " }, { t: "ident", v: "scene" }, { t: "op", v: "." }, { t: "fn", v: "zoomOut" }, { t: "op", v: "({ " }, { t: "prop", v: "duration" }, { t: "op", v: ": " }, { t: "string", v: "'normal'" }, { t: "op", v: ", " }, { t: "prop", v: "scale" }, { t: "op", v: ": " }, { t: "number", v: "1.0" }, { t: "op", v: " });" }
     ]},
@@ -289,16 +309,14 @@
 
   // Draw Neon Contours with Progressive Scanline Reveal (Samsung Wonderland Edge Style)
   const ctx = canvas?.getContext('2d');
+
+
+
+  // Draw Neon Contours with Organic Spline Reveal (Wonderland Edge Style - No Harsh Scanners)
   function drawNeonContours(t) {
     if (!ctx || !preparedPaths.length) return;
 
-    // Auto-hide character contours cleanly once video takes over to ensure 100% lag-free playback
-    if (t >= 4000) {
-      if (canvas) {
-        if (canvas.style.opacity !== '0') canvas.style.opacity = '0';
-        if (canvas.style.display !== 'none') canvas.style.display = 'none';
-      }
-      if (scanline && scanline.style.opacity !== '0') scanline.style.opacity = '0';
+    if (t >= 3600) {
       return;
     }
 
@@ -308,9 +326,14 @@
 
     ctx.clearRect(0, 0, 1920, 1080);
 
+    if (scanline) {
+      scanline.style.opacity = '0';
+      scanline.style.display = 'none';
+    }
+
     if (!contourGradient) {
       contourGradient = ctx.createLinearGradient(0, 40, 0, 1060);
-      contourGradient.addColorStop(0.00, '#fde047'); // Bright golden yellow (top cowlick & hair strands)
+      contourGradient.addColorStop(0.00, '#fde047'); // Bright golden yellow (cowlick & top hair)
       contourGradient.addColorStop(0.18, '#fb923c'); // Warm sunset orange
       contourGradient.addColorStop(0.36, '#f472b6'); // Rose pink / magenta
       contourGradient.addColorStop(0.58, '#c084fc'); // Electric purple / violet
@@ -318,34 +341,15 @@
       contourGradient.addColorStop(1.00, '#22d3ee'); // Bright electric teal
     }
 
-    // Top-to-Bottom Neural Scanline Laser Sweep (0s to 3.5s)
-    let scanY = 1080;
-    if (t < 3500) {
-      scanY = (t / 3500) * 1080;
-      if (scanline) {
-        scanline.style.opacity = '1';
-        scanline.style.top = `${((scanY / 1080) * 100).toFixed(2)}%`;
-      }
-    } else {
-      if (scanline) scanline.style.opacity = '0';
-    }
-
-    const drawRatio = clamp(t / 3500);
+    const drawRatio = clamp(t / 3200);
     const targetLen = drawRatio * totalContourLength;
 
-    // Smooth soft fadeout as video blooms into full focus (3.5s - 4.0s)
-    const contourFade = t < 3500 ? 1.0 : Math.max(0, 1.0 - (t - 3500) / 500);
-    if (canvas) canvas.style.opacity = String(contourFade);
+    // Smooth soft fadeout as video blooms into full focus (3.2s - 3.6s)
+    const contourFade = t < 3200 ? 1.0 : Math.max(0, 1.0 - (t - 3200) / 400);
 
-    // Wonderland Edge Dynamic Shimmer Pulse (always vivid and luminous)
+    // Dynamic Shimmer Pulse
     const edgePulse = 0.94 + 0.06 * Math.sin(t * 0.007);
     const alpha1 = edgePulse * contourFade;
-
-    ctx.save();
-    // Clip strictly to scanY so no lines appear below the laser sweep
-    ctx.beginPath();
-    ctx.rect(0, 0, 1920, Math.min(1080, scanY));
-    ctx.clip();
 
     // Pass 1: Delicate Chromatic Neon Filament (Thinner main lines ~0.95px, fine details ~0.50px)
     ctx.save();
@@ -357,7 +361,6 @@
     let accum1 = 0;
     for (const p of preparedPaths) {
       if (accum1 >= targetLen) break;
-      if (t < 3500 && p.minY > scanY) continue;
       ctx.lineWidth = p.isMain ? 0.95 : 0.50;
       const avail = targetLen - accum1;
       if (avail >= p.total) {
@@ -383,7 +386,6 @@
     let accum2 = 0;
     for (const p of preparedPaths) {
       if (accum2 >= targetLen) break;
-      if (t < 3500 && p.minY > scanY) continue;
       ctx.lineWidth = p.isMain ? 0.40 : 0.22;
       const avail = targetLen - accum2;
       if (avail >= p.total) {
@@ -398,20 +400,6 @@
       }
     }
     ctx.restore();
-
-    // Laser contact flare along the scanline
-    if (t < 3500) {
-      ctx.save();
-      const contactGrad = ctx.createLinearGradient(0, scanY - 3, 0, scanY + 3);
-      contactGrad.addColorStop(0, 'rgba(56, 189, 248, 0)');
-      contactGrad.addColorStop(0.5, 'rgba(255, 255, 255, 0.85)');
-      contactGrad.addColorStop(1, 'rgba(192, 132, 252, 0)');
-      ctx.fillStyle = contactGrad;
-      ctx.fillRect(0, scanY - 2, 1920, 4);
-      ctx.restore();
-    }
-
-    ctx.restore();
   }
 
   // Master Timeline Render Loop
@@ -419,6 +407,21 @@
   let lastCharCount = -1;
 
   function render(t) {
+    // 0. Boot Initializing Screen (0.0s – 1.4s)
+    if (bootCurtain) {
+      if (t < 1100) {
+        bootCurtain.style.opacity = '1';
+        bootCurtain.style.display = 'flex';
+      } else if (t < 1600) {
+        const fade = smooth((1600 - t) / 500);
+        bootCurtain.style.opacity = String(fade);
+        bootCurtain.style.display = 'flex';
+      } else {
+        bootCurtain.style.opacity = '0';
+        bootCurtain.style.display = 'none';
+      }
+    }
+
     // 1. Timecode & Progress Ratio
     const sec = Math.floor(t / 1000);
     const cs = Math.floor((t % 1000) / 10);
@@ -434,29 +437,30 @@
 
     // 2. Status Text
     if (syncStatus) {
-      if (t < 2000) syncStatus.textContent = 'INITIALIZING NEURAL LINK';
-      else if (t < 3500) syncStatus.textContent = 'PHOTON MATRIX CALIBRATION';
-      else if (t < 6500) syncStatus.textContent = 'RECONSTRUCTING TOPOLOGY';
-      else if (t < 9500) syncStatus.textContent = 'SYNCHRONIZING CONSCIOUSNESS';
+      if (t < 1800) syncStatus.textContent = 'INITIALIZING NEURAL LINK';
+      else if (t < 3200) syncStatus.textContent = 'PHOTON MATRIX CALIBRATION';
+      else if (t < 6000) syncStatus.textContent = 'OCULAR APERTURE AWAKENING';
+      else if (t < 8500) syncStatus.textContent = 'SYNCHRONIZING CONSCIOUSNESS';
       else syncStatus.textContent = 'SYSTEM ONLINE // AWAKENING COMPLETE';
     }
 
     // 3. Authentic Full-Screen GPU Video Mode (Directly matching TikTok original link)
     if (isAuthentic && masterVideo) {
       if (playing && masterVideo.paused) {
+        masterVideo.muted = true;
         masterVideo.play().catch(() => {});
       }
       const targetSec = t / 1000;
-      if (Math.abs(masterVideo.currentTime - targetSec) > 0.4) {
+      if (Math.abs(masterVideo.currentTime - targetSec) > 2.0) {
         masterVideo.currentTime = targetSec;
       }
 
-      // Shutter & Flash into Antigravity
-      const shutterStart = TOTAL_DURATION - 1000;
+      // Soft Photonic Aperture Flash into Antigravity (NO CENTER LINE)
+      const shutterStart = TOTAL_DURATION - 800;
       if (t >= shutterStart) {
         if (shutter) {
-          shutter.style.opacity = '1';
-          shutter.style.transform = `scaleX(${clamp((t - shutterStart) / 450)})`;
+          shutter.style.opacity = '0';
+          shutter.style.display = 'none';
         }
         if (flash) {
           const fProg = clamp((t - shutterStart) / 400);
@@ -464,7 +468,10 @@
           flash.style.opacity = String(smooth(fProg) * fFade);
         }
       } else {
-        if (shutter) shutter.style.opacity = '0';
+        if (shutter) {
+          shutter.style.opacity = '0';
+          shutter.style.display = 'none';
+        }
         if (flash) flash.style.opacity = '0';
       }
 
@@ -479,14 +486,14 @@
       return;
     }
 
-    // 4. Dynamic Camera Zoom Engine (Split Screen Mode):
-    // Starts zoomed-in close on the upper head (scale 1.78, translate(-6%, -5%))
-    // Smoothly zooms out between 3.5s and 8.5s down to normal framing (scale 1.0, translate(0, 0))
+    // 4. Dynamic Camera Zoom Engine:
+    // Starts zoomed-in close on Elaina's sleeping face (scale 1.78, translate(-6%, -5%))
+    // Smoothly zooms out between 3.2s and 6.0s down to normal framing (scale 1.0, translate(0, 0))
     if (stage) {
-      if (t <= 3500) {
+      if (t <= 3200) {
         stage.style.transform = 'scale(1.78) translate(-6%, -5%)';
-      } else if (t <= 8500) {
-        const alpha = smooth((t - 3500) / 5000);
+      } else if (t <= 6000) {
+        const alpha = smooth((t - 3200) / 2800);
         const scale = 1.78 - 0.78 * alpha;
         const tx = -6 * (1 - alpha);
         const ty = -5 * (1 - alpha);
@@ -496,42 +503,93 @@
       }
     }
 
-    // 5. Smooth Character Reveal (Organic Dissolve & Clarification, NO physical scanner cut)
+    // 5. Progressive Character Reveal from Darkness:
+    // Closed-eye still frame starts in deep shadow (#000000), leaving the room pitch black
+    // while neon Wonderland Edge contours draw in darkness, then softly illuminating Elaina.
     if (artwork) {
-      artwork.style.clipPath = 'none';
-      artwork.style.webkitClipPath = 'none';
-      if (t < 3500) {
-        const fade = smooth(t / 2200);
-        const brightnessVal = (0.50 + 0.50 * (t / 3500)).toFixed(2);
-        artwork.style.opacity = String(fade);
-        artwork.style.filter = `contrast(1.15) brightness(${brightnessVal})`;
-      } else if (t <= 4500) {
+      if (t < 1400) {
+        artwork.style.opacity = '0';
+        artwork.style.filter = 'contrast(1.4) brightness(0.05)';
+        artwork.style.maskImage = 'none';
+        artwork.style.webkitMaskImage = 'none';
+        artwork.style.clipPath = 'none';
+        artwork.style.webkitClipPath = 'none';
+      } else if (t < 2400) {
+        // 1.4s - 2.4s: Pitch-black void. Background room is completely dark.
+        // Faint dark silhouette (opacity <= 0.15, brightness 0.22) emerges gently under neon contours.
+        const p1 = (t - 1400) / 1000;
+        const faintAlpha = 0.15 * smooth(p1);
+        artwork.style.opacity = String(faintAlpha);
+        artwork.style.filter = 'contrast(1.3) brightness(0.22)';
+        artwork.style.maskImage = 'none';
+        artwork.style.webkitMaskImage = 'none';
+        artwork.style.clipPath = 'none';
+        artwork.style.webkitClipPath = 'none';
+      } else if (t < 3200) {
+        // 2.4s - 3.2s: Light smoothly blooms over Elaina as contours reach the hands and book.
+        const p2 = (t - 2400) / 800;
+        const bloomFade = smooth(p2);
+        const alpha = 0.15 + 0.85 * bloomFade;
+        const bright = (0.22 + 0.78 * bloomFade).toFixed(2);
+        artwork.style.opacity = String(alpha);
+        artwork.style.filter = `contrast(1.1) brightness(${bright})`;
+        artwork.style.maskImage = 'none';
+        artwork.style.webkitMaskImage = 'none';
+        artwork.style.clipPath = 'none';
+        artwork.style.webkitClipPath = 'none';
+      } else if (t <= 3600) {
+        artwork.style.maskImage = 'none';
+        artwork.style.webkitMaskImage = 'none';
+        artwork.style.clipPath = 'none';
+        artwork.style.webkitClipPath = 'none';
         artwork.style.filter = 'none';
-        const fade = smooth((t - 3500) / 1000);
+        // Seamless 400ms crossfade into live video
+        const fade = smooth((t - 3200) / 400);
         artwork.style.opacity = String(1.0 - fade);
       } else {
+        artwork.style.maskImage = 'none';
+        artwork.style.webkitMaskImage = 'none';
+        artwork.style.clipPath = 'none';
+        artwork.style.webkitClipPath = 'none';
         artwork.style.filter = 'none';
-        artwork.style.opacity = '0';
-      }
-    }
         artwork.style.opacity = '0';
       }
     }
 
-    // Celestial FX (Orbital rings, meteors & ambient glow) bloom ONLY after the laser scan finishes!
-    if (t < 3500) {
+    // Celestial FX (Orbital rings, meteors & ambient glow)
+    if (t < 1200) {
       if (orbitalSystem) orbitalSystem.style.opacity = '0';
       if (meteorsLayer) meteorsLayer.style.opacity = '0';
       if (ambientGlow) ambientGlow.style.opacity = '0';
+    } else if (t < 2000) {
+      const initFade = smooth((t - 1200) / 800);
+      if (orbitalSystem) orbitalSystem.style.opacity = String(0.75 * initFade);
+      if (meteorsLayer) meteorsLayer.style.opacity = String(0.85 * initFade);
+      if (ambientGlow) ambientGlow.style.opacity = String(0.20 * initFade);
+    } else if (t < 3200) {
+      if (orbitalSystem) orbitalSystem.style.opacity = '0.75';
+      if (meteorsLayer) meteorsLayer.style.opacity = '0.85';
+      if (ambientGlow) ambientGlow.style.opacity = '0.20';
     } else {
-      const fxBloom = smooth((t - 3500) / 1200);
-      if (orbitalSystem) orbitalSystem.style.opacity = String(fxBloom);
-      if (meteorsLayer) meteorsLayer.style.opacity = String(fxBloom);
-      if (ambientGlow) ambientGlow.style.opacity = String(0.12 + 0.35 * fxBloom);
+      const bloom = smooth((t - 3200) / 1200);
+      if (orbitalSystem) orbitalSystem.style.opacity = String(0.75 + 0.25 * bloom);
+      if (meteorsLayer) meteorsLayer.style.opacity = String(0.85 + 0.15 * bloom);
+      if (ambientGlow) ambientGlow.style.opacity = String(0.20 + 0.25 * bloom);
     }
 
-    // Auto-hide character contours after video takes over
-    if (t < 4000) {
+    // Auto-hide character contours cleanly as video takes over (completely gone at t >= 3600)
+    if (t < 3200) {
+      if (canvas) {
+        if (canvas.style.display === 'none') canvas.style.display = 'block';
+        canvas.style.opacity = '1';
+      }
+      drawNeonContours(t);
+    } else if (t < 3600) {
+      const contourFade = smooth((3600 - t) / 400);
+      if (canvas) {
+        if (canvas.style.display === 'none') canvas.style.display = 'block';
+        canvas.style.opacity = String(contourFade);
+      }
       drawNeonContours(t);
     } else {
       if (canvas && canvas.style.display !== 'none') {
@@ -541,25 +599,24 @@
       }
       if (scanline && scanline.style.opacity !== '0') {
         scanline.style.opacity = '0';
+        scanline.style.display = 'none';
       }
     }
 
-    // 5. Live Video Playback (Starts cleanly from 0.0s right when laser reveal finishes and camera zooms out)
+    // 6. Live Video Playback (assets/elaina-video.mp4):
+    // Elaina starts with eyes closed at 0.0s matching artwork.jpg.
+    // Video starts playing cleanly at t = 3200 right as camera zooms out.
+    // Elaina naturally awakens and opens her eyes between 3.2s and 6.0s (video 0s -> 2.8s).
     if (video) {
-      if (t < 3500) {
+      if (t < 3200) {
         video.style.opacity = '0';
-        if (!video.paused) video.pause();
-        if (video.currentTime !== 0) video.currentTime = 0;
+        if (!video.paused) {
+          video.pause();
+        }
       } else {
-        const videoFade = smooth((t - 3500) / 1000);
+        const videoFade = smooth((t - 3200) / 400);
         video.style.opacity = String(videoFade);
 
-        if (video.duration && isFinite(video.duration)) {
-          const targetVideoTime = Math.min(video.duration, (t - 3500) / 1000);
-          if (Math.abs(video.currentTime - targetVideoTime) > 1.5) {
-            video.currentTime = targetVideoTime;
-          }
-        }
         if (playing && video.paused) {
           video.play().catch(() => {});
         }
@@ -569,7 +626,7 @@
     // 6. Live Code Terminal Typewriter (Flows all the way down full vertical screen)
     if (codeStream) {
       const codeStart = 60;
-      const codeEnd = 10500;
+      const codeEnd = TOTAL_DURATION - 1200;
       const totalLines = CODE_LINES.length;
 
       let currentLineIdx = -1;
@@ -584,42 +641,71 @@
       }
 
       if (currentLineIdx !== lastLineIndex || currentCharCount !== lastCharCount) {
+        if (currentLineIdx < lastLineIndex || lastLineIndex === -1) {
+          codeStream.innerHTML = '';
+          for (let i = 0; i <= currentLineIdx; i++) {
+            const l = CODE_LINES[i];
+            const isCurrent = i === currentLineIdx;
+            const chars = isCurrent ? currentCharCount : l.text.length;
+            const div = document.createElement('div');
+            div.className = 'code-line';
+            div.innerHTML = renderLineHTML(l, chars, isCurrent);
+            codeStream.appendChild(div);
+          }
+        } else {
+          while (codeStream.children.length < currentLineIdx) {
+            const idx = codeStream.children.length;
+            const l = CODE_LINES[idx];
+            const div = document.createElement('div');
+            div.className = 'code-line';
+            div.innerHTML = renderLineHTML(l, l.text.length, false);
+            codeStream.appendChild(div);
+          }
+          if (lastLineIndex >= 0 && lastLineIndex < currentLineIdx && codeStream.children[lastLineIndex]) {
+            const prevL = CODE_LINES[lastLineIndex];
+            codeStream.children[lastLineIndex].innerHTML = renderLineHTML(prevL, prevL.text.length, false);
+          }
+          if (!codeStream.children[currentLineIdx] && currentLineIdx >= 0) {
+            const div = document.createElement('div');
+            div.className = 'code-line';
+            codeStream.appendChild(div);
+          }
+          if (codeStream.children[currentLineIdx]) {
+            const curL = CODE_LINES[currentLineIdx];
+            codeStream.children[currentLineIdx].innerHTML = renderLineHTML(curL, currentCharCount, true);
+          }
+        }
         lastLineIndex = currentLineIdx;
         lastCharCount = currentCharCount;
-
-        let linesHTML = '';
-        for (let i = 0; i <= currentLineIdx; i++) {
-          const l = CODE_LINES[i];
-          const isCurrent = i === currentLineIdx;
-          const chars = isCurrent ? currentCharCount : l.text.length;
-          linesHTML += `<div class="code-line">${renderLineHTML(l, chars, isCurrent)}</div>`;
-        }
-        codeStream.innerHTML = linesHTML;
         codeStream.scrollTop = codeStream.scrollHeight;
       }
 
-      // Dim left code stream slightly as character awakes to draw full focus
-      if (t >= 7500) {
-        codeStream.style.opacity = '0.72';
+      // Dim left code stream smoothly as character awakes to draw full focus
+      if (t >= 6000) {
+        const dimFade = smooth((t - 6000) / 1500);
+        codeStream.style.opacity = String(1.0 - 0.55 * dimFade);
       } else {
         codeStream.style.opacity = '1';
       }
     }
 
-    // 8. Climax Shutter & Flash into Antigravity
-    const shutterStart = 10800;
+    // 8. Climax Soft Photonic Flash into Antigravity (NO CENTER LINE)
+    const shutterStart = TOTAL_DURATION - 800;
     if (t >= shutterStart) {
       if (shutter) {
-        shutter.style.opacity = '1';
-        shutter.style.transform = `scaleX(${clamp((t - shutterStart) / 600)})`;
+        shutter.style.opacity = '0';
+        shutter.style.display = 'none';
       }
       if (flash) {
-        const fProg = clamp((t - shutterStart) / 550);
-        const fFade = Math.max(0, 1 - (t - (shutterStart + 550)) / 450);
+        const fProg = clamp((t - shutterStart) / 420);
+        const fFade = Math.max(0, 1 - (t - (shutterStart + 420)) / 380);
         flash.style.opacity = String(smooth(fProg) * fFade);
       }
     } else {
-      if (shutter) shutter.style.opacity = '0';
+      if (shutter) {
+        shutter.style.opacity = '0';
+        shutter.style.display = 'none';
+      }
       if (flash) flash.style.opacity = '0';
     }
 
@@ -656,8 +742,12 @@
     playing = true;
     origin = performance.now() - elapsed;
     if (pauseBtn) pauseBtn.textContent = 'Tạm dừng';
+    if (isAuthentic && masterVideo) {
+      masterVideo.muted = true;
+      masterVideo.play().catch(() => {});
+    }
     if (video) {
-      if (elapsed >= 3200) {
+      if (elapsed >= 3500) {
         video.play().catch(() => {});
       } else {
         video.pause();
@@ -672,6 +762,7 @@
     playing = false;
     cancelAnimationFrame(frame);
     if (pauseBtn) pauseBtn.textContent = 'Tiếp tục';
+    if (isAuthentic && masterVideo) masterVideo.pause();
     if (video) video.pause();
   }
 
@@ -679,13 +770,16 @@
     elapsed = Math.max(0, Math.min(TOTAL_DURATION, targetMs));
     origin = performance.now() - elapsed;
     lastLineIndex = -1;
-    if (elapsed < 3200 && canvas) {
+    if (elapsed < 3500 && canvas) {
       canvas.style.display = 'block';
       canvas.style.opacity = '1';
     }
     render(elapsed);
+    if (isAuthentic && masterVideo && masterVideo.duration) {
+      masterVideo.currentTime = Math.min(masterVideo.duration, elapsed / 1000);
+    }
     if (video && video.duration) {
-      video.currentTime = elapsed < 3200 ? 0 : Math.min(video.duration, (elapsed - 3200) / 1000);
+      video.currentTime = elapsed < 3500 ? 0 : Math.min(video.duration, (elapsed - 3500) / 1000);
     }
   }
 
@@ -693,6 +787,9 @@
     pause();
     completed = false;
     lastLineIndex = -1;
+    if (video) {
+      try { video.currentTime = 0; } catch (_) {}
+    }
     seek(0);
     play();
   }
@@ -722,13 +819,14 @@
 
   function applyWallpaperSettings() {
     const pal = getActivePalette();
+    const isCustomVid = userConfig?.video && !userConfig.video.includes('/startup-video.mp4') && !userConfig.video.includes('/wallpaper-tiktok.mp4') && !userConfig.video.startsWith('http://127.0.0.1:') && !userConfig.video.startsWith('http://localhost:');
     send('background', {
       strength: wallpaperStrength,
       editorOpacity: editorOpacity,
       themePreset: currentThemePreset,
       palette: pal,
       isVideo: true,
-      video: userConfig?.video || assets.video,
+      video: (isCustomVid ? userConfig.video : null) || assets.wallpaperVideo || assets.video,
       image: userConfig?.artwork || assets.artwork
     });
   }
@@ -737,9 +835,10 @@
     try {
       if (window.imageSettings) {
         userConfig = await window.imageSettings.load();
-        if (userConfig.video && video) {
+        const isCustomVid = userConfig?.video && !userConfig.video.includes('/startup-video.mp4') && !userConfig.video.includes('/wallpaper-tiktok.mp4') && !userConfig.video.startsWith('http://127.0.0.1:') && !userConfig.video.startsWith('http://localhost:');
+        if (isCustomVid && video) {
           video.src = userConfig.video;
-        } else if (video && (!video.src || video.src.endsWith('/'))) {
+        } else if (video && assets.video) {
           video.src = assets.video;
         }
         if (userConfig.artwork && artwork) {
@@ -916,6 +1015,12 @@
       const targetS = Number(seekParam);
       seek(targetS * 1000);
       pause();
+      if (masterVideo) {
+        masterVideo.currentTime = targetS;
+        masterVideo.addEventListener('loadedmetadata', () => {
+          masterVideo.currentTime = targetS;
+        }, { once: true });
+      }
       if (video) {
         const vidTime = targetS < 3.2 ? 0 : (targetS - 3.2);
         if (video.duration && isFinite(video.duration)) {
@@ -927,7 +1032,22 @@
         }
       }
     } else {
-      restart();
+      const startAt = Math.max(0, Math.min(TOTAL_DURATION - 200, Number(window.ANTIGRAVITY_START_AT) || 0));
+      if (startAt > 0) {
+        pause();
+        completed = false;
+        lastLineIndex = -1;
+        seek(startAt);
+        if (video && startAt >= 3500) {
+          const vidTime = (startAt - 3500) / 1000;
+          const applyTime = () => { try { video.currentTime = Math.min(video.duration || vidTime, vidTime); } catch (_) {} };
+          if (video.readyState >= 1) applyTime();
+          else video.addEventListener('loadedmetadata', applyTime, { once: true });
+        }
+        play();
+      } else {
+        restart();
+      }
     }
   }
 

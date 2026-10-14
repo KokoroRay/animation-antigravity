@@ -1,0 +1,707 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Elaina Master Cinematic Generator</title>
+  <style>
+    body, html {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      background: #000;
+      overflow: hidden;
+    }
+    #canvas {
+      width: 1920px;
+      height: 1080px;
+      display: block;
+    }
+    #status {
+      position: fixed;
+      top: 10px;
+      left: 10px;
+      color: #38bdf8;
+      font-family: monospace;
+      font-size: 16px;
+      z-index: 100;
+      background: rgba(0,0,0,0.8);
+      padding: 6px 12px;
+      border-radius: 4px;
+    }
+  </style>
+</head>
+<body>
+  <div id="status">Initializing Generator...</div>
+  <canvas id="canvas" width="1920" height="1080"></canvas>
+  <video id="elaina-video" src="/assets/elaina-video.mp4" muted playsinline preload="auto" style="display:none;"></video>
+  <img id="elaina-still" src="/assets/elaina_f0.png" style="display:none;" />
+  <script src="/assets/elaina-contours.js"></script>
+  <script>
+    (async () => {
+      const statusEl = document.getElementById('status');
+      const canvas = document.getElementById('canvas');
+      const ctx = canvas.getContext('2d', { alpha: false });
+      const video = document.getElementById('elaina-video');
+      const still = document.getElementById('elaina-still');
+
+      // Wait for image and video metadata
+      await new Promise(r => {
+        if (still.complete) r();
+        else still.onload = r;
+      });
+
+      await new Promise(r => {
+        if (video.readyState >= 2) r();
+        else video.onloadeddata = r;
+      });
+
+      // Prepare contours
+      const rawPaths = window.CONTOUR_PATHS || [];
+      let totalContourLength = 0;
+      const preparedPaths = rawPaths.map(points => {
+        if (!points || points.length < 2) return null;
+        let len = 0;
+        let minY = 9999;
+        for (let i = 1; i < points.length; i++) {
+          len += Math.hypot(points[i][0] - points[i - 1][0], points[i][1] - points[i - 1][1]);
+          if (points[i][1] < minY) minY = points[i][1];
+        }
+        totalContourLength += len;
+        const p2d = new Path2D();
+        p2d.moveTo(points[0][0], points[0][1]);
+        for (let i = 1; i < points.length - 1; i++) {
+          const xc = (points[i][0] + points[i + 1][0]) / 2;
+          const yc = (points[i][1] + points[i + 1][1]) / 2;
+          p2d.quadraticCurveTo(points[i][0], points[i][1], xc, yc);
+        }
+        p2d.lineTo(points[points.length - 1][0], points[points.length - 1][1]);
+        const isMain = len >= 140;
+        return { points, total: len, minY, path2d: p2d, isMain };
+      }).filter(Boolean);
+
+      // Gradient for contours
+      const contourGradient = ctx.createLinearGradient(0, 40, 0, 1060);
+      contourGradient.addColorStop(0.00, '#fde047'); // Gold cowlick
+      contourGradient.addColorStop(0.18, '#fb923c'); // Sunset orange
+      contourGradient.addColorStop(0.36, '#f472b6'); // Rose pink
+      contourGradient.addColorStop(0.58, '#c084fc'); // Electric purple / violet
+      contourGradient.addColorStop(0.80, '#38bdf8'); // Sky cyan
+      contourGradient.addColorStop(1.00, '#22d3ee'); // Bright teal
+
+      // Sci-fi code lines for left column
+      const CODE_LINES = [
+        { text: "// Initializing neural core · Starlight online", type: "comment" },
+        { text: "const seed = 'ocean://memory';", type: "code", tokens: [
+          { t: "keyword", v: "const " }, { t: "ident", v: "seed" }, { t: "op", v: " = " }, { t: "string", v: "'ocean://memory'" }, { t: "op", v: ";" }
+        ]},
+        { text: "await boot(seed); // neural matrix online", type: "code", tokens: [
+          { t: "keyword", v: "await " }, { t: "fn", v: "boot" }, { t: "op", v: "(" }, { t: "ident", v: "seed" }, { t: "op", v: "); " }, { t: "comment", v: "// neural matrix online" }
+        ]},
+        { text: "const clock = sync('neural');", type: "code", tokens: [
+          { t: "keyword", v: "const " }, { t: "ident", v: "clock" }, { t: "op", v: " = " }, { t: "fn", v: "sync" }, { t: "op", v: "(" }, { t: "string", v: "'neural'" }, { t: "op", v: ");" }
+        ]},
+        { text: "clock.rate = 60; // synchronize light particles", type: "code", tokens: [
+          { t: "ident", v: "clock" }, { t: "op", v: "." }, { t: "prop", v: "rate" }, { t: "op", v: " = " }, { t: "number", v: "60" }, { t: "op", v: "; " }, { t: "comment", v: "// synchronize light particles" }
+        ]},
+        { text: "// Photon array · Signal link connected", type: "comment" },
+        { text: "const photons = collect('cyan');", type: "code", tokens: [
+          { t: "keyword", v: "const " }, { t: "ident", v: "photons" }, { t: "op", v: " = " }, { t: "fn", v: "collect" }, { t: "op", v: "(" }, { t: "string", v: "'cyan'" }, { t: "op", v: ");" }
+        ]},
+        { text: "photons.spread(0.72);", type: "code", tokens: [
+          { t: "ident", v: "photons" }, { t: "op", v: "." }, { t: "fn", v: "spread" }, { t: "op", v: "(" }, { t: "number", v: "0.72" }, { t: "op", v: ");" }
+        ]},
+        { text: "await photons.align(); // spectrum calibrated", type: "code", tokens: [
+          { t: "keyword", v: "await " }, { t: "ident", v: "photons" }, { t: "op", v: "." }, { t: "fn", v: "align" }, { t: "op", v: "(); " }, { t: "comment", v: "// spectrum calibrated" }
+        ]},
+        { text: "// Collecting luminescence · Rebuilding strands", type: "comment" },
+        { text: "const light = scan('hair');", type: "code", tokens: [
+          { t: "keyword", v: "const " }, { t: "ident", v: "light" }, { t: "op", v: " = " }, { t: "fn", v: "scan" }, { t: "op", v: "(" }, { t: "string", v: "'hair'" }, { t: "op", v: ");" }
+        ]},
+        { text: "await light.trace(); // luminous strands rebuilt", type: "code", tokens: [
+          { t: "keyword", v: "await " }, { t: "ident", v: "light" }, { t: "op", v: "." }, { t: "fn", v: "trace" }, { t: "op", v: "(); " }, { t: "comment", v: "// luminous strands rebuilt" }
+        ]},
+        { text: "light.edge = 0.85;", type: "code", tokens: [
+          { t: "ident", v: "light" }, { t: "op", v: "." }, { t: "prop", v: "edge" }, { t: "op", v: " = " }, { t: "number", v: "0.85" }, { t: "op", v: ";" }
+        ]},
+        { text: "light.tint = ['cyan', 'violet', 'ice'];", type: "code", tokens: [
+          { t: "ident", v: "light" }, { t: "op", v: "." }, { t: "prop", v: "tint" }, { t: "op", v: " = [" }, { t: "string", v: "'cyan'" }, { t: "op", v: ", " }, { t: "string", v: "'violet'" }, { t: "op", v: ", " }, { t: "string", v: "'ice'" }, { t: "op", v: "];" }
+        ]},
+        { text: "// Deep-space link · Establishing socket", type: "comment" },
+        { text: "const link = connect('deep-space');", type: "code", tokens: [
+          { t: "keyword", v: "const " }, { t: "ident", v: "link" }, { t: "op", v: " = " }, { t: "fn", v: "connect" }, { t: "op", v: "(" }, { t: "string", v: "'deep-space'" }, { t: "op", v: ");" }
+        ]},
+        { text: "await link.listen();", type: "code", tokens: [
+          { t: "keyword", v: "await " }, { t: "ident", v: "link" }, { t: "op", v: "." }, { t: "fn", v: "listen" }, { t: "op", v: "();" }
+        ]},
+        { text: "link.signal = 1.0;", type: "code", tokens: [
+          { t: "ident", v: "link" }, { t: "op", v: "." }, { t: "prop", v: "signal" }, { t: "op", v: " = " }, { t: "number", v: "1.0" }, { t: "op", v: ";" }
+        ]},
+        { text: "// Decoding memory graph · Topology sync", type: "comment" },
+        { text: "const face = await decode(); // resolve topology", type: "code", tokens: [
+          { t: "keyword", v: "const " }, { t: "ident", v: "face" }, { t: "op", v: " = " }, { t: "keyword", v: "await " }, { t: "fn", v: "decode" }, { t: "op", v: "(); " }, { t: "comment", v: "// resolve topology" }
+        ]},
+        { text: "face.align({ precision: 'high' });", type: "code", tokens: [
+          { t: "ident", v: "face" }, { t: "op", v: "." }, { t: "fn", v: "align" }, { t: "op", v: "({ " }, { t: "prop", v: "precision" }, { t: "op", v: ": " }, { t: "string", v: "'high'" }, { t: "op", v: " });" }
+        ]},
+        { text: "face.resolve();", type: "code", tokens: [
+          { t: "ident", v: "face" }, { t: "op", v: "." }, { t: "fn", v: "resolve" }, { t: "op", v: "();" }
+        ]},
+        { text: "// Vector contours · Progressive laser reveal", type: "comment" },
+        { text: "const contour = trace('silhouette');", type: "code", tokens: [
+          { t: "keyword", v: "const " }, { t: "ident", v: "contour" }, { t: "op", v: " = " }, { t: "fn", v: "trace" }, { t: "op", v: "(" }, { t: "string", v: "'silhouette'" }, { t: "op", v: ");" }
+        ]},
+        { text: "contour.smooth(0.92); // preserve silhouette", type: "code", tokens: [
+          { t: "ident", v: "contour" }, { t: "op", v: "." }, { t: "fn", v: "smooth" }, { t: "op", v: "(" }, { t: "number", v: "0.92" }, { t: "op", v: "); " }, { t: "comment", v: "// preserve silhouette" }
+        ]},
+        { text: "await contour.reveal();", type: "code", tokens: [
+          { t: "keyword", v: "await " }, { t: "ident", v: "contour" }, { t: "op", v: "." }, { t: "fn", v: "reveal" }, { t: "op", v: "();" }
+        ]},
+        { text: "// Stardust emission · Kinetic particle burst", type: "comment" },
+        { text: "const trails = emit('stardust');", type: "code", tokens: [
+          { t: "keyword", v: "const " }, { t: "ident", v: "trails" }, { t: "op", v: " = " }, { t: "fn", v: "emit" }, { t: "op", v: "(" }, { t: "string", v: "'stardust'" }, { t: "op", v: ");" }
+        ]},
+        { text: "trails.velocity = 0.86;", type: "code", tokens: [
+          { t: "ident", v: "trails" }, { t: "op", v: "." }, { t: "prop", v: "velocity" }, { t: "op", v: " = " }, { t: "number", v: "0.86" }, { t: "op", v: ";" }
+        ]},
+        { text: "trails.palette = light.tint;", type: "code", tokens: [
+          { t: "ident", v: "trails" }, { t: "op", v: "." }, { t: "prop", v: "palette" }, { t: "op", v: " = " }, { t: "ident", v: "light" }, { t: "op", v: "." }, { t: "prop", v: "tint" }, { t: "op", v: ";" }
+        ]},
+        { text: "await trails.cross();", type: "code", tokens: [
+          { t: "keyword", v: "await " }, { t: "ident", v: "trails" }, { t: "op", v: "." }, { t: "fn", v: "cross" }, { t: "op", v: "();" }
+        ]},
+        { text: "// Iris awakening · Synchronizing ocular aperture", type: "comment" },
+        { text: "await eyes.open(0.85); // iris aperture synchronized", type: "code", tokens: [
+          { t: "keyword", v: "await " }, { t: "ident", v: "eyes" }, { t: "op", v: "." }, { t: "fn", v: "open" }, { t: "op", v: "(" }, { t: "number", v: "0.85" }, { t: "op", v: "); " }, { t: "comment", v: "// iris aperture synchronized" }
+        ]},
+        { text: "const pulse = connect('iris');", type: "code", tokens: [
+          { t: "keyword", v: "const " }, { t: "ident", v: "pulse" }, { t: "op", v: " = " }, { t: "fn", v: "connect" }, { t: "op", v: "(" }, { t: "string", v: "'iris'" }, { t: "op", v: ");" }
+        ]},
+        { text: "pulse.glow('cyan');", type: "code", tokens: [
+          { t: "ident", v: "pulse" }, { t: "op", v: "." }, { t: "fn", v: "glow" }, { t: "op", v: "(" }, { t: "string", v: "'cyan'" }, { t: "op", v: ");" }
+        ]},
+        { text: "// Focal stabilization · Iris bloom lock", type: "comment" },
+        { text: "pulse.phase = clock.phase;", type: "code", tokens: [
+          { t: "ident", v: "pulse" }, { t: "op", v: "." }, { t: "prop", v: "phase" }, { t: "op", v: " = " }, { t: "ident", v: "clock" }, { t: "op", v: "." }, { t: "prop", v: "phase" }, { t: "op", v: ";" }
+        ]},
+        { text: "pulse.bloom(0.72);", type: "code", tokens: [
+          { t: "ident", v: "pulse" }, { t: "op", v: "." }, { t: "fn", v: "bloom" }, { t: "op", v: "(" }, { t: "number", v: "0.72" }, { t: "op", v: ");" }
+        ]},
+        { text: "await pulse.stabilize();", type: "code", tokens: [
+          { t: "keyword", v: "await " }, { t: "ident", v: "pulse" }, { t: "op", v: "." }, { t: "fn", v: "stabilize" }, { t: "op", v: "();" }
+        ]},
+        { text: "// Meditation complete · Attaching subject to viewport", type: "comment" },
+        { text: "scene.attach(face);", type: "code", tokens: [
+          { t: "ident", v: "scene" }, { t: "op", v: "." }, { t: "fn", v: "attach" }, { t: "op", v: "(" }, { t: "ident", v: "face" }, { t: "op", v: ");" }
+        ]},
+        { text: "scene.depth = 'quiet';", type: "code", tokens: [
+          { t: "ident", v: "scene" }, { t: "op", v: "." }, { t: "prop", v: "depth" }, { t: "op", v: " = " }, { t: "string", v: "'quiet'" }, { t: "op", v: ";" }
+        ]},
+        { text: "scene.focus = eyes.center;", type: "code", tokens: [
+          { t: "ident", v: "scene" }, { t: "op", v: "." }, { t: "prop", v: "focus" }, { t: "op", v: " = " }, { t: "ident", v: "eyes" }, { t: "op", v: "." }, { t: "prop", v: "center" }, { t: "op", v: ";" }
+        ]},
+        { text: "// Camera zoom out to 1.0x · Initiating live stream", type: "comment" },
+        { text: "await scene.zoomOut({ duration: 'normal', scale: 1.0 });", type: "code", tokens: [
+          { t: "keyword", v: "await " }, { t: "ident", v: "scene" }, { t: "op", v: "." }, { t: "fn", v: "zoomOut" }, { t: "op", v: "({ " }, { t: "prop", v: "duration" }, { t: "op", v: ": " }, { t: "string", v: "'normal'" }, { t: "op", v: ", " }, { t: "prop", v: "scale" }, { t: "op", v: ": " }, { t: "number", v: "1.0" }, { t: "op", v: " });" }
+        ]},
+        { text: "await scene.playVideo();", type: "code", tokens: [
+          { t: "keyword", v: "await " }, { t: "ident", v: "scene" }, { t: "op", v: "." }, { t: "fn", v: "playVideo" }, { t: "op", v: "();" }
+        ]},
+        { text: "trails.release();", type: "code", tokens: [
+          { t: "ident", v: "trails" }, { t: "op", v: "." }, { t: "fn", v: "release" }, { t: "op", v: "();" }
+        ]},
+        { text: "await sync('consciousness');", type: "code", tokens: [
+          { t: "keyword", v: "await " }, { t: "fn", v: "sync" }, { t: "op", v: "(" }, { t: "string", v: "'consciousness'" }, { t: "op", v: ");" }
+        ]},
+        { text: "// Quantum registers · Calibrating memory bus", type: "comment" },
+        { text: "const registers = allocate('quantum');", type: "code", tokens: [
+          { t: "keyword", v: "const " }, { t: "ident", v: "registers" }, { t: "op", v: " = " }, { t: "fn", v: "allocate" }, { t: "op", v: "(" }, { t: "string", v: "'quantum'" }, { t: "op", v: ");" }
+        ]},
+        { text: "registers.bind('elaina.memory');", type: "code", tokens: [
+          { t: "ident", v: "registers" }, { t: "op", v: "." }, { t: "fn", v: "bind" }, { t: "op", v: "(" }, { t: "string", v: "'elaina.memory'" }, { t: "op", v: ");" }
+        ]},
+        { text: "await registers.lock(); // state immutable", type: "code", tokens: [
+          { t: "keyword", v: "await " }, { t: "ident", v: "registers" }, { t: "op", v: "." }, { t: "fn", v: "lock" }, { t: "op", v: "(); " }, { t: "comment", v: "// state immutable" }
+        ]},
+        { text: "// Neural bridge · Connecting Antigravity engine", type: "comment" },
+        { text: "const bridge = link('antigravity://runtime');", type: "code", tokens: [
+          { t: "keyword", v: "const " }, { t: "ident", v: "bridge" }, { t: "op", v: " = " }, { t: "fn", v: "link" }, { t: "op", v: "(" }, { t: "string", v: "'antigravity://runtime'" }, { t: "op", v: ");" }
+        ]},
+        { text: "bridge.pipe(scene.viewport);", type: "code", tokens: [
+          { t: "ident", v: "bridge" }, { t: "op", v: "." }, { t: "fn", v: "pipe" }, { t: "op", v: "(" }, { t: "ident", v: "scene" }, { t: "op", v: "." }, { t: "prop", v: "viewport" }, { t: "op", v: ");" }
+        ]},
+        { text: "await bridge.activate(); // bridge established", type: "code", tokens: [
+          { t: "keyword", v: "await " }, { t: "ident", v: "bridge" }, { t: "op", v: "." }, { t: "fn", v: "activate" }, { t: "op", v: "(); " }, { t: "comment", v: "// bridge established" }
+        ]},
+        { text: "// Harmonic aura · Shifting palette", type: "comment" },
+        { text: "theme.apply('aura'); // palette harmonic", type: "code", tokens: [
+          { t: "ident", v: "theme" }, { t: "op", v: "." }, { t: "fn", v: "apply" }, { t: "op", v: "(" }, { t: "string", v: "'aura'" }, { t: "op", v: "); " }, { t: "comment", v: "// palette harmonic" }
+        ]},
+        { text: "wallpaper.stream(liveVideo);", type: "code", tokens: [
+          { t: "ident", v: "wallpaper" }, { t: "op", v: "." }, { t: "fn", v: "stream" }, { t: "op", v: "(" }, { t: "ident", v: "liveVideo" }, { t: "op", v: ");" }
+        ]},
+        { text: "await scene.ready(); // consciousness online", type: "code", tokens: [
+          { t: "keyword", v: "await " }, { t: "ident", v: "scene" }, { t: "op", v: "." }, { t: "fn", v: "ready" }, { t: "op", v: "(); " }, { t: "comment", v: "// consciousness online" }
+        ]}
+      ];
+
+      // Helpers
+      const clamp = n => Math.max(0, Math.min(1, n));
+      const smooth = n => { const t = clamp(n); return t * t * (3 - 2 * t); };
+
+      // Shooting stars data (horizontal/slanted realistic meteors)
+      const METEORS = [
+        { startT: 300,   dur: 950,  y: 160, x0: 1750, dx: -1250, dy: 130, color: '#38bdf8' },
+        { startT: 900,   dur: 1050, y: 300, x0: 1850, dx: -1300, dy: 140, color: '#c084fc' },
+        { startT: 1600,  dur: 950,  y: 130, x0: 1680, dx: -1200, dy: 120, color: '#f472b6' },
+        { startT: 2300,  dur: 900,  y: 380, x0: 1900, dx: -1350, dy: 150, color: '#38bdf8' },
+        { startT: 3100,  dur: 1000, y: 240, x0: 1720, dx: -1250, dy: 130, color: '#ffffff' },
+        { startT: 4200,  dur: 950,  y: 190, x0: 1800, dx: -1200, dy: 120, color: '#38bdf8' },
+        { startT: 5500,  dur: 1050, y: 340, x0: 1750, dx: -1250, dy: 140, color: '#c084fc' },
+        { startT: 7200,  dur: 950,  y: 150, x0: 1700, dx: -1200, dy: 130, color: '#38bdf8' },
+        { startT: 8800,  dur: 1000, y: 280, x0: 1820, dx: -1280, dy: 140, color: '#f472b6' },
+        { startT: 10400, dur: 950,  y: 220, x0: 1760, dx: -1220, dy: 130, color: '#38bdf8' }
+      ];
+
+      // Render single frame
+      async function drawFrame(t) {
+        ctx.fillStyle = '#000000';
+        ctx.fillRect(0, 0, 1920, 1080);
+
+        // ----------------------------------------------------
+        // 1. CHARACTER STAGE WITH CAMERA ZOOM & RADIAL MASK
+        // ----------------------------------------------------
+        let camScale = 1.0;
+        let camTx = 0;
+        let camTy = 0;
+
+        if (t <= 3200) {
+          camScale = 1.55;
+          camTx = -1310 * (camScale - 1) + (1920 * (camScale - 1) * 0.28);
+          camTy = -320 * (camScale - 1) + (1080 * (camScale - 1) * 0.12);
+        } else if (t <= 7500) {
+          const a = smooth((t - 3200) / 4300);
+          camScale = 1.55 - 0.55 * a;
+          const fullTx = -1310 * (1.55 - 1) + (1920 * (1.55 - 1) * 0.28);
+          const fullTy = -320 * (1.55 - 1) + (1080 * (1.55 - 1) * 0.12);
+          camTx = fullTx * (1 - a);
+          camTy = fullTy * (1 - a);
+        } else {
+          camScale = 1.0;
+          camTx = 0;
+          camTy = 0;
+        }
+
+        ctx.save();
+        ctx.translate(camTx, camTy);
+        ctx.scale(camScale, camScale);
+
+        // Draw character video or still image with radial mask in dark opening
+        if (t < 3200) {
+          // Closed-eyes still frame emerging softly from pitch black
+          const progress = clamp(t / 3200);
+          const imgAlpha = smooth(t / 2500) * 0.70; // Soft emergence
+          const maskRadius = 120 + 320 * smooth(progress); // Expands as contours draw
+
+          ctx.save();
+          // Create radial clip mask around Elaina's face/hair (1310, 320) so outer room is pitch black!
+          const rGrad = ctx.createRadialGradient(1310, 320, 40, 1310, 320, maskRadius);
+          rGrad.addColorStop(0, `rgba(255, 255, 255, ${imgAlpha.toFixed(2)})`);
+          rGrad.addColorStop(0.7, `rgba(255, 255, 255, ${(imgAlpha * 0.6).toFixed(2)})`);
+          rGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+
+          // Draw still image clipped
+          ctx.globalAlpha = imgAlpha;
+          ctx.drawImage(still, 0, 0, 1920, 1080);
+
+          // Darken edges around Elaina so only she emerges from the blackness
+          ctx.globalCompositeOperation = 'destination-in';
+          ctx.fillStyle = rGrad;
+          ctx.fillRect(0, 0, 1920, 1080);
+          ctx.restore();
+        } else {
+          // Video playback starting at 0.7s so eyes open right around 4.5s!
+          const vidT = 0.7 + ((t - 3200) / 1000);
+          await new Promise(r => {
+            if (Math.abs(video.currentTime - vidT) < 0.04) return r();
+            video.onseeked = () => r();
+            video.currentTime = Math.min(vidT, video.duration - 0.1);
+          });
+          const vidAlpha = Math.min(1.0, (t - 3200) / 400);
+          ctx.save();
+          ctx.globalAlpha = vidAlpha;
+          ctx.drawImage(video, 0, 0, 1920, 1080);
+          ctx.restore();
+        }
+
+        // Draw Neon Contours (0s to 3.8s) - Sáng đèn & Rõ nét
+        if (t < 3800) {
+          const contourAlpha = t < 3200 ? 1.0 : Math.max(0, 1.0 - (t - 3200) / 600);
+          const drawProgress = clamp(t / 3200);
+          const targetLength = drawProgress * totalContourLength;
+
+          // Pass 0: Soft Neon Aura Glow (Illuminates like glowing neon lamps "sáng đèn")
+          ctx.save();
+          ctx.strokeStyle = contourGradient;
+          ctx.shadowColor = '#38bdf8';
+          ctx.shadowBlur = 14;
+          ctx.globalAlpha = contourAlpha * 0.50;
+          ctx.lineCap = 'round';
+          ctx.lineJoin = 'round';
+
+          let acc0 = 0;
+          for (const p of preparedPaths) {
+            if (acc0 >= targetLength) break;
+            ctx.lineWidth = p.isMain ? 3.8 : 2.2;
+            const rem = targetLength - acc0;
+            if (rem >= p.total) {
+              ctx.setLineDash([]);
+              ctx.stroke(p.path2d);
+              acc0 += p.total;
+            } else {
+              ctx.setLineDash([rem, p.total]);
+              ctx.stroke(p.path2d);
+              acc0 += rem;
+              break;
+            }
+          }
+          ctx.restore();
+
+          // Pass 1: Neon Chromatic Stroke (Vibrant & saturated neon tube body)
+          ctx.save();
+          ctx.strokeStyle = contourGradient;
+          ctx.shadowColor = '#c084fc';
+          ctx.shadowBlur = 5;
+          ctx.globalAlpha = contourAlpha * 0.95;
+          ctx.lineCap = 'round';
+          ctx.lineJoin = 'round';
+
+          let acc1 = 0;
+          for (const p of preparedPaths) {
+            if (acc1 >= targetLength) break;
+            ctx.lineWidth = p.isMain ? 1.8 : 1.1;
+            const rem = targetLength - acc1;
+            if (rem >= p.total) {
+              ctx.setLineDash([]);
+              ctx.stroke(p.path2d);
+              acc1 += p.total;
+            } else {
+              ctx.setLineDash([rem, p.total]);
+              ctx.stroke(p.path2d);
+              acc1 += rem;
+              break;
+            }
+          }
+          ctx.restore();
+
+          // Pass 2: Laser White Filament Core ("rõ nét hơn", crisp laser center)
+          ctx.save();
+          ctx.strokeStyle = '#ffffff';
+          ctx.globalAlpha = contourAlpha * 0.95;
+          ctx.lineCap = 'round';
+          ctx.lineJoin = 'round';
+
+          let acc2 = 0;
+          for (const p of preparedPaths) {
+            if (acc2 >= targetLength) break;
+            ctx.lineWidth = p.isMain ? 0.80 : 0.45;
+            const rem = targetLength - acc2;
+            if (rem >= p.total) {
+              ctx.setLineDash([]);
+              ctx.stroke(p.path2d);
+              acc2 += p.total;
+            } else {
+              ctx.setLineDash([rem, p.total]);
+              ctx.stroke(p.path2d);
+              acc2 += rem;
+              break;
+            }
+          }
+          ctx.restore();
+        }
+
+        ctx.restore(); // end camera zoom transform
+
+        // ----------------------------------------------------
+        // 2. ORBITAL RINGS & SHOOTING STARS
+        // ----------------------------------------------------
+        // Orbital Rings (Around Elaina)
+        if (t >= 600 && t <= 11500) {
+          const orbAlpha = t < 1600 ? (t - 600) / 1000 : t > 10500 ? Math.max(0, 1 - (t - 10500) / 1000) : 1.0;
+          ctx.save();
+          ctx.globalAlpha = orbAlpha * 0.55;
+
+          // Ring 1 (Cyan)
+          ctx.save();
+          ctx.translate(1310, 340);
+          ctx.rotate(-0.35 + t * 0.00015);
+          ctx.strokeStyle = 'rgba(56, 189, 248, 0.45)';
+          ctx.lineWidth = 1.1;
+          ctx.beginPath();
+          ctx.ellipse(0, 0, 360, 160, 0, 0, Math.PI * 2);
+          ctx.stroke();
+
+          // Satellite bead
+          const bAngle = t * 0.0012;
+          const bx = 360 * Math.cos(bAngle);
+          const by = 160 * Math.sin(bAngle);
+          ctx.fillStyle = '#ffffff';
+          ctx.beginPath();
+          ctx.arc(bx, by, 2.5, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.restore();
+
+          // Ring 2 (Violet)
+          ctx.save();
+          ctx.translate(1310, 340);
+          ctx.rotate(0.50 - t * 0.00018);
+          ctx.strokeStyle = 'rgba(192, 132, 252, 0.40)';
+          ctx.lineWidth = 1.0;
+          ctx.beginPath();
+          ctx.ellipse(0, 0, 320, 140, 0, 0, Math.PI * 2);
+          ctx.stroke();
+          ctx.restore();
+
+          ctx.restore();
+        }
+
+        // Shooting Stars (Horizontal / diagonal realistic trails)
+        for (const m of METEORS) {
+          if (t >= m.startT && t <= m.startT + m.dur) {
+            const p = (t - m.startT) / m.dur;
+            const curX = m.x0 + m.dx * p;
+            const curY = m.y + m.dy * p;
+            const headAlpha = Math.sin(p * Math.PI);
+
+            ctx.save();
+            ctx.globalAlpha = headAlpha * 0.85;
+
+            const trailGrad = ctx.createLinearGradient(curX, curY, curX - m.dx * 0.18, curY - m.dy * 0.18);
+            trailGrad.addColorStop(0, '#ffffff');
+            trailGrad.addColorStop(0.3, m.color);
+            trailGrad.addColorStop(1, 'rgba(0,0,0,0)');
+
+            ctx.strokeStyle = trailGrad;
+            ctx.lineWidth = 2.0;
+            ctx.beginPath();
+            ctx.moveTo(curX, curY);
+            ctx.lineTo(curX - m.dx * 0.18, curY - m.dy * 0.18);
+            ctx.stroke();
+
+            // Head flare
+            ctx.fillStyle = '#ffffff';
+            ctx.beginPath();
+            ctx.arc(curX, curY, 2.0, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.restore();
+          }
+        }
+
+        // ----------------------------------------------------
+        // 3. CYBERPUNK TERMINAL CODE STREAM (Left Column)
+        // ----------------------------------------------------
+        const codeAlpha = t < 12000 ? 1.0 : Math.max(0, 1.0 - (t - 12000) / 600);
+        if (codeAlpha > 0) {
+          ctx.save();
+          ctx.globalAlpha = codeAlpha;
+
+          // Header
+          ctx.font = '700 12px "JetBrains Mono", Consolas, monospace';
+          ctx.fillStyle = 'rgba(56, 189, 248, 0.95)';
+          ctx.fillText('TERMINAL // NEURAL MATRIX', 75, 58);
+
+          // Typing speed: 195 chars/sec so all lines flow smoothly down the entire screen!
+          const totalCharsPerSec = 195;
+          const typedChars = Math.floor((t / 1000) * totalCharsPerSec);
+
+          let charAcc = 0;
+          let activeLineIdx = 0;
+          let activeCharInLine = 0;
+
+          for (let i = 0; i < CODE_LINES.length; i++) {
+            const len = CODE_LINES[i].text.length;
+            if (charAcc + len >= typedChars) {
+              activeLineIdx = i;
+              activeCharInLine = typedChars - charAcc;
+              break;
+            }
+            charAcc += len;
+            if (i === CODE_LINES.length - 1) {
+              activeLineIdx = i;
+              activeCharInLine = len;
+            }
+          }
+
+          // Full vertical code layout down the screen (larger 15.5px font, 28px line height)
+          const lineHeight = 28;
+          // Smooth continuous downward cascading flow ("dạng chạy dọc xuống")
+          let scrollY = 0;
+          if (activeLineIdx > 14) {
+            const currentLineTotal = Math.max(1, CODE_LINES[activeLineIdx].text.length);
+            const lineProgress = activeCharInLine / currentLineTotal;
+            scrollY = (activeLineIdx - 14 + lineProgress) * lineHeight;
+          }
+
+          ctx.save();
+          ctx.beginPath();
+          // Expanded horizontally to 840px and full vertical height
+          ctx.rect(55, 65, 840, 970);
+          ctx.clip();
+          ctx.translate(0, -scrollY);
+
+          ctx.font = '15.5px "JetBrains Mono", Consolas, monospace';
+
+          for (let i = 0; i <= activeLineIdx; i++) {
+            const line = CODE_LINES[i];
+            const y = 92 + i * lineHeight;
+            if (y - scrollY < 40 || y - scrollY > 1060) continue;
+
+            const isCurrent = (i === activeLineIdx);
+            const charsToShow = isCurrent ? activeCharInLine : line.text.length;
+
+            if (line.type === 'comment') {
+              ctx.fillStyle = '#64748b';
+              ctx.fillText(line.text.slice(0, charsToShow), 75, y);
+            } else {
+              let curX = 75;
+              let rem = charsToShow;
+              for (const tok of line.tokens) {
+                if (rem <= 0) break;
+                const chunk = tok.v.slice(0, rem);
+                rem -= chunk.length;
+
+                if (tok.t === 'keyword') ctx.fillStyle = '#f472b6';
+                else if (tok.t === 'fn') ctx.fillStyle = '#38bdf8';
+                else if (tok.t === 'string') ctx.fillStyle = '#facc15';
+                else if (tok.t === 'number') ctx.fillStyle = '#c084fc';
+                else if (tok.t === 'prop') ctx.fillStyle = '#a5b4fc';
+                else if (tok.t === 'op') ctx.fillStyle = '#94a3b8';
+                else if (tok.t === 'comment') ctx.fillStyle = '#64748b';
+                else ctx.fillStyle = '#e2e8f0';
+
+                ctx.fillText(chunk, curX, y);
+                curX += ctx.measureText(chunk).width;
+              }
+            }
+
+            // Blinking cursor
+            if (isCurrent && Math.floor(t / 200) % 2 === 0) {
+              const fullWidth = ctx.measureText(line.text.slice(0, charsToShow)).width;
+              ctx.fillStyle = '#38bdf8';
+              ctx.fillRect(75 + fullWidth + 4, y - 13, 8, 17);
+            }
+          }
+          ctx.restore();
+          ctx.restore();
+        }
+
+        // ----------------------------------------------------
+        // 4. HUD STATUS BAR & TIMECODE (Authentic Antigravity HUD)
+        // ----------------------------------------------------
+        // Top right timecode
+        const sec = Math.floor(t / 1000);
+        const cs = Math.floor((t % 1000) / 10);
+        const tcStr = `00:${String(sec).padStart(2, '0')}:${String(cs).padStart(2, '0')}`;
+        ctx.save();
+        ctx.font = '11px "JetBrains Mono", Consolas, monospace';
+        ctx.fillStyle = 'rgba(148, 163, 184, 0.7)';
+        ctx.fillText(tcStr, 1780, 75);
+
+        // Top left title
+        ctx.fillStyle = 'rgba(56, 189, 248, 0.9)';
+        ctx.fillText('ANTIGRAVITY // NEURAL AWAKENING', 75, 40);
+
+        // Bottom right progress bar
+        const progressPct = clamp(t / 12200);
+        const pctStr = (progressPct * 100).toFixed(2) + '%';
+        ctx.font = '700 11px "JetBrains Mono", Consolas, monospace';
+        ctx.fillStyle = 'rgba(56, 189, 248, 0.9)';
+        ctx.fillText('SYNC MATRIX', 1600, 1010);
+        ctx.fillStyle = '#ffffff';
+        ctx.fillText(pctStr, 1820, 1010);
+
+        // Progress line
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.15)';
+        ctx.fillRect(1600, 1022, 260, 3);
+        const barGrad = ctx.createLinearGradient(1600, 0, 1860, 0);
+        barGrad.addColorStop(0, '#38bdf8');
+        barGrad.addColorStop(1, '#c084fc');
+        ctx.fillStyle = barGrad;
+        ctx.fillRect(1600, 1022, 260 * progressPct, 3);
+
+        // Status text under progress bar
+        let statusText = 'INITIALIZING NEURAL LINK';
+        if (t >= 2000 && t < 3500) statusText = 'PHOTON MATRIX CALIBRATION';
+        else if (t >= 3500 && t < 7000) statusText = 'RECONSTRUCTING TOPOLOGY';
+        else if (t >= 7000 && t < 11800) statusText = 'SYNCHRONIZING CONSCIOUSNESS';
+        else if (t >= 11800) statusText = 'SYSTEM ONLINE // AWAKENING COMPLETE';
+
+        ctx.font = '9.5px "JetBrains Mono", Consolas, monospace';
+        ctx.fillStyle = 'rgba(148, 163, 184, 0.6)';
+        ctx.fillText(statusText, 1600, 1042);
+        ctx.restore();
+
+        // ----------------------------------------------------
+        // 5. SHUTTER & FLASH TRANSITION (12.2s to 13.5s)
+        // ----------------------------------------------------
+        if (t >= 12200) {
+          const sProg = clamp((t - 12200) / 800);
+          // Shutter horizontal lines closing
+          const h = 540 * smooth(sProg);
+          ctx.fillStyle = '#0c0e14';
+          ctx.fillRect(0, 0, 1920, h);
+          ctx.fillRect(0, 1080 - h, 1920, h);
+
+          // Center bright photon beam
+          const beamAlpha = 1.0 - smooth(clamp((t - 12800) / 600));
+          ctx.strokeStyle = `rgba(56, 189, 248, ${beamAlpha.toFixed(2)})`;
+          ctx.lineWidth = 2.5;
+          ctx.shadowColor = '#38bdf8';
+          ctx.shadowBlur = 15;
+          ctx.beginPath();
+          ctx.moveTo(0, 540);
+          ctx.lineTo(1920, 540);
+          ctx.stroke();
+
+          // Flash
+          if (t >= 12600 && t <= 13400) {
+            const fAlpha = Math.sin(((t - 12600) / 800) * Math.PI) * 0.75;
+            ctx.fillStyle = `rgba(255, 255, 255, ${fAlpha.toFixed(2)})`;
+            ctx.fillRect(0, 0, 1920, 1080);
+          }
+        }
+      }
+
+      // Export frame by frame
+      const TOTAL_FRAMES = 810; // 13.5s at 60fps
+      statusEl.textContent = 'Starting export (0/810)...';
+
+      for (let f = 0; f < TOTAL_FRAMES; f++) {
+        const t = f * (13500 / TOTAL_FRAMES);
+        await drawFrame(t);
+
+        const blob = await new Promise(res => canvas.toBlob(res, 'image/jpeg', 0.96));
+        const resp = await fetch('/submit-frame?f=' + f, {
+          method: 'POST',
+          body: blob
+        });
+        if (!resp.ok) {
+          throw new Error('Server returned ' + resp.status);
+        }
+
+        if (f % 30 === 0) {
+          statusEl.textContent = `Exporting frame ${f}/${TOTAL_FRAMES} (${((f/TOTAL_FRAMES)*100).toFixed(1)}%)...`;
+        }
+      }
+
+      statusEl.textContent = 'All 810 frames exported successfully!';
+      await fetch('/done', { method: 'POST' });
+    })().catch(err => {
+      console.error(err);
+      document.getElementById('status').textContent = 'ERROR: ' + err.message;
+      fetch('/error', { method: 'POST', body: err.message });
+    });
+  </script>
+</body>
+</html>
