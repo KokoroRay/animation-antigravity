@@ -1,111 +1,105 @@
-# Antigravity Cinematic Startup Animation & Live Wallpaper 🚀✨
+# Antigravity Cinematic Startup Animation & Live Wallpaper
 
-> Hoạt cảnh khởi động điện ảnh Cyber / Anime 12 giây và giao diện **Deep Theme Customization** kèm Live Video Wallpaper dành cho **Google Antigravity IDE** trên **Windows** (và đa nền tảng).
-> Dự án được phát triển dựa trên mã nguồn [Codex Startup Animation](https://github.com/panding999/codex-startup-animation) của [@panding999](https://github.com/panding999), sau đó được chuyển thể và tùy chỉnh cho Google Antigravity IDE.
+Hoạt cảnh khởi động phong cách anime/cyberpunk và bộ tùy chỉnh giao diện dành cho **Google Antigravity IDE**. Dự án có trang xem trước chạy cục bộ, hiệu ứng hoạt cảnh, các tùy chọn theme và live wallpaper.
 
----
+Dự án được chuyển thể từ [Codex Startup Animation](https://github.com/panding999/codex-startup-animation) của [@panding999](https://github.com/panding999).
 
-## 🌟 Trình tự Điện ảnh Chuẩn xác (Cinematic Timeline)
+## Demo
 
-Hoạt cảnh diễn ra theo bố cục 2 cột song song tuyệt đẹp:
+Video giới thiệu hoạt cảnh:
 
-```text
-┌───────────────────────────────────────────────────┬─────────────────────────────────────────────────────┐
-│ CỘT TRÁI: LIVE CODE STREAM TERMINAL               │ CỘT PHẢI: ELAINA STAGE (ZOOM CẬN CẢNH & NEON GLOW)  │
-├───────────────────────────────────────────────────┼─────────────────────────────────────────────────────┤
-│ [0.0s - 3.8s] GÕ MÃ KHỞI TẠO MA TRẬN              │ [0.0s - 3.8s] TĨNH TUYỆT ĐỐI + NÉT VẼ LASER RỰC RỠ │
-│  const seed = 'ocean://memory';                   │  Khung hình tĩnh 0.0s của Elaina đang ngủ nhắm mắt. │
-│  await boot(seed); // neural matrix online        │  Nền tối mờ huyền ảo làm nổi bật nét laser 2-pass   │
-│  const photons = collect('cyan');                 │  (gradient cyan/hồng + lõi trắng laser cực mảnh)   │
-│  photons.spread(0.72);                            │  bám khít 1:1 từng đường nét nhân vật, video pause. │
-├───────────────────────────────────────────────────┼─────────────────────────────────────────────────────┤
-│ [3.8s - 6.5s] BẮT ĐẦU CHẠY VIDEO & ZOOM RA XA     │ [3.8s - 6.5s] CAMERA ZOOM RA XA + ÁNH SÁNG NỞ BỪNG  │
-│  const light = scan('hair');                      │  Khi vẽ xong nét, camera từ từ zoom lùi ra xa.      │
-│  await light.trace(); // luminous strands         │  Video bắt đầu phát mượt mà từ 0.0s, ánh sáng bừng  │
-│  const link = connect('deep-space');              │  nở từ 0.42 lên 1.02. Ở 5.6s-6.3s, Elaina tự nhiên  │
-│  link.signal = 1.0;                               │  mở mắt màu tím anime (không còn vệt flare giả).    │
-├───────────────────────────────────────────────────┼─────────────────────────────────────────────────────┤
-│ [6.5s - 10.5s] ĐỒNG BỘ TOÀN DIỆN & VỆT SAO BĂNG   │ [6.5s - 10.5s] 60FPS LIVE VIDEO + QUỸ ĐẠO BỤI SAO   │
-│  await neural.wake(); // consciousness synchronized│  Góc nhìn rộng toàn cảnh, video 60FPS mượt mà.     │
-│  const stream = connect('motion');                │  3 vòng elip phát sáng và bụi sao băng lướt qua.    │
-│  stream.render({ live: true });                   │  HUD chạm mốc SYNC MATRIX: 100.00% ONLINE.          │
-├───────────────────────────────────────────────────┴─────────────────────────────────────────────────────┤
-│ [10.5s - 11.5s] MÀN TRẬP QUÉT NGANG (SHUTTER FLASH) & TIẾN VÀO ANTIGRAVITY                            │
-│  Màn trập quét ngang thu về tâm, ánh sáng chớp lóa và mở ra không gian làm việc Antigravity IDE.        │
-└─────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+<video src="./2026-10-14%2011-55-54.mp4" controls preload="metadata" width="100%">
+  Trình duyệt của bạn không hỗ trợ phát video. Hãy
+  <a href="./2026-10-14%2011-55-54.mp4">mở hoặc tải video demo</a>.
+</video>
+
+Nếu trình xem Markdown không phát video trực tiếp, [mở hoặc tải video demo](./2026-10-14%2011-55-54.mp4).
+
+## Tính năng
+
+- Hoạt cảnh mở đầu gồm màn hình khởi động, code chạy, hiệu ứng nét vẽ neon, video nhân vật và lớp HUD.
+- Trang preview độc lập có thể tua, tạm dừng, phát lại và mở hộp thoại cài đặt.
+- Tùy chỉnh video MP4/WebM và hình ảnh artwork; dữ liệu tùy chỉnh được lưu trong IndexedDB trên trình duyệt.
+- Chọn các preset giao diện Aura Dark Cyber, Elaina Starlight Cyber, tự đồng bộ màu từ video, Cyber Neon Matrix và Deep Space Noir.
+- Điều chỉnh độ rõ của editor và cường độ live wallpaper.
+- Launcher tích hợp để áp dụng hoạt cảnh và giao diện vào Antigravity trên Windows.
+
+## Yêu cầu
+
+- **Node.js** phiên bản hỗ trợ ES modules (khuyến nghị bản LTS hiện hành).
+- **Windows** và Google Antigravity IDE nếu muốn chạy launcher tích hợp.
+- Không cần cài package npm riêng cho preview và bộ kiểm thử hiện tại.
+
+## Bắt đầu nhanh
+
+Mở PowerShell hoặc terminal tại thư mục dự án.
+
+### Xem trước hoạt cảnh trong trình duyệt
+
+```bash
+npm run preview
 ```
 
----
+Máy chủ preview chạy tại `http://127.0.0.1:8765` và tự mở trình duyệt. Có thể chạy `Preview-Animation.bat` trên Windows thay cho lệnh npm.
 
-## 🎨 Can thiệp Sâu Giao diện Antigravity (Deep Theme Customization)
+### Chạy launcher tích hợp trên Windows
 
-Sau khi hoạt cảnh kết thúc, Antigravity IDE được khoác lên bộ theme **Anime Cyber/Starlight Theme** đồng bộ hoàn hảo với video:
-- **Tự động đồng bộ màu chính của Video (Auto Palette)**: Thuật toán tự động trích xuất các dải màu chủ đạo từ video (`--antigravity-base` cho nền tối, `--antigravity-tint-rgb` cho ánh sáng cyan, `--antigravity-violet-rgb` cho màu tím huyền ảo).
-- **4 Preset Theme phong phú**:
-  1. *Elaina Starlight Cyber* (Mặc định chuẩn video)
-  2. *Tự động theo dải màu Video* (Thích ứng mọi video người dùng tải lên)
-  3. *Cyber Neon Matrix* (Xanh neon & Hồng rực rỡ)
-  4. *Deep Space Noir* (Đen vũ trụ sâu thẳm & Bạc)
-- **Hiệu ứng Clear trong suốt nhưng Siêu mượt (Không gây lag)**:
-  - Loại bỏ hoàn toàn blur nặng trên khung soạn thảo Monaco Editor $\rightarrow$ cuộn code đạt **60/120 FPS mượt mà tuyệt đối**.
-  - Thanh bên (Sidebar), thanh trạng thái (Status Bar) và thanh AI Composer sử dụng kính mờ GPU-friendly `blur(10px)` tinh tế.
-- **Đảm bảo môi trường làm việc bình thường hoàn hảo**:
-  - Tùy chỉnh **Độ rõ nền soạn thảo (Editor Clarity)** từ 60% đến 95% (mặc định 82%): Nền code tối chuẩn, chữ và cú pháp (Syntax Highlight) tương phản cao AAA, line numbers, cursor, và diffs hoàn toàn rõ nét, không bị mỏi mắt.
-  - Hình nền video chạy ambient bán trong suốt ở lớp nền (mặc định 40%) kèm lớp phủ vignette tỏa đều, tôn vinh nhân vật ở khoảng trống mà không che chữ.
-
----
-
-## 🚀 Hướng dẫn Sử dụng (Quick Start)
-
-### 1. Khởi chạy 1-Click trên Windows
-Nhấp đúp chuột vào tệp:
 ```cmd
 Start-Antigravity.bat
 ```
-> **Đã xử lý triệt để lỗi bỏ qua đoạn đầu:** Launcher tự động phát hiện nếu Antigravity đang chạy ngầm hoặc đã mở sẵn, tự động khởi động lại với cổng gỡ lỗi CDP để **100% các lần bật đều xem trọn vẹn hoạt cảnh mở đầu**!
 
-### 2. Tạo lối tắt màn hình Desktop
-Chạy trong PowerShell để tạo icon đẹp mắt trên Desktop:
+Hoặc khởi chạy trực tiếp bằng Node.js:
+
+```bash
+npm start
+```
+
+Nếu Antigravity đang mở mà hoạt cảnh không xuất hiện, hãy đóng hoàn toàn các tiến trình Antigravity rồi chạy lại launcher.
+
+### Tạo lối tắt Desktop trên Windows
+
 ```powershell
 powershell -ExecutionPolicy Bypass -File Create-Desktop-Shortcut.ps1
 ```
 
-### 3. Tùy chỉnh Video / Ảnh / Độ trong suốt
-Trong lúc hoạt cảnh đang chiếu (hoặc bất kỳ lúc nào trong Antigravity), bạn có thể:
-- Nhấn phím tắt: **`Ctrl+Alt+B`** (hoặc `Cmd+Option+B` trên macOS).
-- Chọn video Anime MP4/WebM tùy thích (hỗ trợ cả video Elaina 4K).
-- Tải ảnh mới để tự động trích xuất nét vẽ Neon đa sắc.
-- Kéo thanh trượt điều chỉnh độ rõ của hình nền video trong Antigravity.
-- Bấm **Lưu & Phát thử** để cập nhật ngay lập tức vào Antigravity.
+## Tùy chỉnh
 
-### 4. Xem trước trên Trình duyệt (Không cần mở Antigravity)
-Nhấp đúp vào:
-```cmd
-Preview-Animation.bat
-```
-Hoặc:
-```bash
-npm run preview
-```
-Trình duyệt sẽ mở `http://127.0.0.1:8765` với đầy đủ thanh tua thời gian, nút phát lại và hộp thoại cài đặt.
+Trong preview hoặc Antigravity, mở **Cài đặt giao diện**. Trong Antigravity, có thể dùng phím tắt **Ctrl+Alt+B**.
 
----
+Tại hộp thoại cài đặt, bạn có thể:
 
-## 🧪 Kiểm thử Tự động (Testing)
+1. Chọn video MP4/WebM hoặc ảnh artwork khác từ máy.
+2. Chọn một preset màu giao diện.
+3. Điều chỉnh độ rõ nền editor và cường độ live wallpaper.
+4. Lưu thay đổi, áp dụng và phát lại hoạt cảnh.
 
-Dự án đi kèm bộ unit test tích hợp sẵn:
+Các video và hình ảnh do người dùng chọn được lưu cục bộ trong IndexedDB của trình duyệt; cài đặt không yêu cầu tải nội dung lên dịch vụ bên ngoài.
+
+## Kiểm thử
+
+Chạy toàn bộ unit test:
+
 ```bash
 npm test
 ```
-- ✅ Kiểm tra nhận diện cửa sổ Antigravity qua CDP.
-- ✅ Kiểm tra bảo mật local socket CDP.
-- ✅ Kiểm tra tính toàn vẹn cú pháp của toàn bộ script tiêm (không lỗi JS).
-- ✅ Kiểm tra thuật toán trích xuất vector đường viền Sobel.
 
----
+Bộ test hiện có kiểm tra nhận diện cửa sổ qua CDP, bảo vệ CDP local socket, cú pháp các script được tiêm và thuật toán vector hóa đường viền.
 
-## 📄 Bản quyền & Tín dụng
-- Video hoạt cảnh mẫu: *Elaina Sleepy Wandering Witch* trích xuất từ nguồn anime chất lượng cao.
+## Cấu trúc dự án
+
+| Đường dẫn | Mô tả |
+| --- | --- |
+| `index.html`, `style.css` | Giao diện preview và kiểu dáng hoạt cảnh |
+| `animation.js` | Điều khiển trình tự hoạt cảnh |
+| `image-settings.js` | Hộp thoại cài đặt video, ảnh và giao diện |
+| `bin/preview-server.mjs` | Máy chủ preview cục bộ |
+| `bin/launcher.mjs` | Điểm vào của launcher |
+| `extension/` | Tích hợp CDP, renderer và live wallpaper |
+| `assets/` | Media, ảnh artwork và tài nguyên của hoạt cảnh |
+| `test/` | Unit test |
+| `2026-10-14 11-55-54.mp4` | Video demo được nhúng ở phần trên |
+
+## Ghi nhận và giấy phép
+
 - Mã nguồn nền tảng: [panding999/codex-startup-animation](https://github.com/panding999/codex-startup-animation).
-- Bản chuyển thể cho Google Antigravity IDE: Antigravity Community.
-- Dự án mã nguồn mở theo giấy phép MIT.
+- Dự án khai báo giấy phép MIT trong `package.json`; hãy kiểm tra giấy phép và quyền sử dụng riêng của từng video, hình ảnh hoặc tài nguyên bên thứ ba đi kèm trước khi phân phối lại.
